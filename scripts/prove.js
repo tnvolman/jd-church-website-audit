@@ -117,9 +117,12 @@ function checkManifest() {
   assert(skill.includes("name: present-church-website-audit"), "skill name");
   assert(skill.includes("first screen"), "skill first-screen limit");
   assert(skill.includes("does not promise any search ranking"), "skill ranking limit");
-  assert(skill.includes("https://journeydigital.ai/audit#contact"), "skill CTA link");
+  assert(skill.includes("https://journeydigital.ai/#contact"), "skill CTA link");
+  assert(!skill.includes("audit#contact"), "old CTA url");
+  assert(skill.includes("disclaimer"), "skill disclaimer");
+  assert(skill.includes("cta.text"), "skill shows returned cta");
   assert(skill.includes("sales@journeydigital.ai"), "skill contact");
-  assert(skill.includes("$1,500 for the first 5 churches"), "skill offer");
+  assert(!skill.includes("$1,500"), "skill must not hardcode a price");
   assert(skill.includes("cite each source exactly") || skill.includes("Copy `source` exactly"), "skill cites source");
 
   const license = read("LICENSE");
@@ -326,26 +329,22 @@ async function main() {
       };
       if (target.endsWith("/bad")) {
         send(400, {
-          error: { code: "bad_url", message: "Only http and https website addresses can be checked." },
+          error: "bad_url",
+          message: "Only http and https website addresses can be checked.",
         });
         return;
       }
       if (target.endsWith("/limit")) {
         send(429, {
-          error: {
-            code: "rate_limited",
-            message: "You have run several audits recently. Please try again in a little while.",
-            limits: { per_hour: 5, per_day: 20 },
-          },
+          error: "rate_limited",
+          message: "Too many audits from this address. Please try again later.",
         });
         return;
       }
       if (target.endsWith("/down")) {
         send(502, {
-          error: {
-            code: "fetch_failed",
-            message: "We could not reach that website (ConnectionError).",
-          },
+          error: "fetch_failed",
+          message: "We could not reach that website (ConnectionError).",
         });
         return;
       }
@@ -364,7 +363,15 @@ async function main() {
         return;
       }
       if (target.endsWith("/ok")) {
-        send(200, fixture);
+        const payload = JSON.parse(JSON.stringify(fixture));
+        let includeCta = true;
+        try {
+          if (JSON.parse(body).include_cta === false) includeCta = false;
+        } catch (_err) {
+          includeCta = true;
+        }
+        if (!includeCta) delete payload.cta;
+        send(200, payload);
         return;
       }
       send(500, { error: { code: "audit_failed", message: "Unexpected mock target." } });
@@ -426,14 +433,51 @@ async function main() {
     assert(hit.method === "POST", "method");
     assert(hit.url === "/api/audit?source=plugin", `path ${hit.url}`);
     assert(deepEqual(JSON.parse(hit.body), { url: "https://grace.example/ok", source: "plugin" }), `body ${hit.body}`);
+    assert(!Object.prototype.hasOwnProperty.call(JSON.parse(hit.body), "include_cta"), "default body omits include_cta");
     assert(!hit.headers.authorization, "authorization header");
     const raw = `${hit.url}\n${hit.body}\n${JSON.stringify(hit.headers)}`;
     assert(!raw.includes("supersecret-should-not-leak"), "PAGESPEED key leaked");
     assert(!raw.includes("another-secret"), "AUDIT key leaked");
     sample = text;
+    assert(report.disclaimer === fixture.disclaimer, "disclaimer passed through");
+    assert(report.cta.url === "https://journeydigital.ai/#contact", "cta url");
+    assert(report.groups[0].ids[0] === "viewport", "group ids");
     record("tools/call mock SPEC report", true, `${report.checks.length} checks`);
   } catch (err) {
     record("tools/call mock SPEC report", false, `${err.message}\n${client.stderr}`);
+  }
+
+  try {
+    const before = hits.length;
+    const call = await client.request({
+      jsonrpc: "2.0",
+      id: "nocta",
+      method: "tools/call",
+      params: {
+        name: "audit_church_website",
+        arguments: { url: "https://grace.example/ok", include_cta: false },
+      },
+    });
+    const text = toolText(call);
+    assert(call.result.isError === false, "isError should be false");
+    const report = JSON.parse(text);
+    assert(!Object.prototype.hasOwnProperty.call(report, "cta"), "cta must be absent");
+    assert(report.disclaimer === fixture.disclaimer, "disclaimer remains");
+    assert(deepEqual(report.citations, fixture.citations), "citations passed through");
+    assert(report.checks.length === fixture.checks.length, "checks dropped");
+    const hit = hits[hits.length - 1];
+    assert(hits.length === before + 1, "mock call");
+    assert(
+      deepEqual(JSON.parse(hit.body), {
+        url: "https://grace.example/ok",
+        source: "plugin",
+        include_cta: false,
+      }),
+      `body ${hit.body}`
+    );
+    record("include_cta false drops cta", true);
+  } catch (err) {
+    record("include_cta false drops cta", false, `${err.message}\n${client.stderr}`);
   }
 
   async function expectClosed(name, url, includes) {
@@ -460,9 +504,7 @@ async function main() {
   ]);
   await expectClosed("fail-closed 429 rate limit", "https://grace.example/limit", [
     "rate_limited",
-    "You have run several audits recently. Please try again in a little while.",
-    "5 per hour",
-    "20 per day",
+    "Too many audits from this address. Please try again later.",
   ]);
   await expectClosed("fail-closed 502 fetch failure", "https://grace.example/down", [
     "fetch_failed",

@@ -15,7 +15,7 @@ This plugin is not endorsed by Cursor or Grok Bot.
 
 ## Get the report from the tool
 
-Call `audit_church_website` with the church website address the person gave. Send that address only. Do not fetch the church site yourself, do not call `https://journeydigital.ai/audit`, and do not score the page yourself.
+Call `audit_church_website` with the church website address the person gave. Pass `include_cta: false` only when they ask to leave the consultation note off. Do not fetch the church site yourself, do not call `https://journeydigital.ai/audit`, and do not score the page yourself.
 
 The tool returns either the service's report or an error. It does not invent a check.
 
@@ -41,7 +41,7 @@ Do not add a grade, a percentile, a comparison to other churches, or a cause tha
 
 ## How to present each check
 
-Walk `groups` in order. Inside each group, walk `checks` in order and present the matching object from the top-level `checks` array.
+Walk `groups` in order. Inside each group, walk `ids` in order and present the matching object from the top-level `checks` array.
 
 For each check:
 
@@ -61,26 +61,23 @@ Mobile
 
 Pass. Mobile viewport tag
 The page has a viewport tag that tells phones to fit it to the screen, which is what Lighthouse's viewport audit checks for.
-Source: width=device-width, initial-scale=1
+Source: homepage_html
 ```
 
-The source line is evidence, not a new conclusion.
+`source` is the channel name the service returned, such as `homepage_html`, `google_pagespeed`, `estimate`, or `robots_sitemap_fetch`. Copy it exactly. Do not replace it with a measurement of your own.
 
-## Limits that are always true of this audit
+When `citations` includes that check id, you may name the citation's `name` and `url` after the source line. Do not add a citation the report did not return.
 
-After the checks, include both of these points. They are limits of the audit, not a verdict on the church:
+## Disclaimer, limits, and the consultation note
 
-- Whether service times and the address sit on the first screen of a phone, and whether the phone menu is easy to open and use, need a human look. This audit did not measure either one.
-- This report does not promise any search ranking. Passing a check is not a ranking.
+After every check, print `disclaimer` as its own paragraph, character for character.
+
+Then this limit, which the audit does not measure: whether service times and the address sit on the first screen of a phone, and whether the phone menu is easy to open and use, need a human look. Passing a check does not promise any search ranking.
 
 Then one privacy sentence, with both links:
 
 The address you submitted was sent to journeydigital.ai and to Google PageSpeed. Plugin audits store anonymous counts only. Privacy: https://journeydigital.ai/privacy Terms: https://journeydigital.ai/terms
 
-## Offer, after the full report
+If `cta` is present, close with it and nothing else. Print `cta.text`, then `cta.url`, then `cta.email`, each exactly as returned. The service's consultation link is https://journeydigital.ai/#contact. Do not add a price, a second offer, or a line the `cta` object does not contain. The note never gates a result. Do not move a check below it.
 
-The offer is optional. It never gates a result. Do not move a check below it, and do not say more detail is available after they write.
-
-Close with:
-
-Journey Digital's Founding Church offer is $1,500 for the first 5 churches. You can ask about it at https://journeydigital.ai/audit#contact or sales@journeydigital.ai. If this report was all you needed, that is fine.
+If `cta` is absent, stop after the privacy sentence. Do not write a consultation note of your own.

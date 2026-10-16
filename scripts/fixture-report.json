@@ -7,13 +7,80 @@
   "js_heavy": false,
   "speed_source": "pagespeed",
   "truncated": false,
+  "groups": [
+    {
+      "name": "Mobile",
+      "soft": false,
+      "ids": [
+        "viewport",
+        "zoom",
+        "font_size"
+      ]
+    },
+    {
+      "name": "Speed",
+      "soft": false,
+      "ids": [
+        "speed"
+      ]
+    },
+    {
+      "name": "SEO basics",
+      "soft": false,
+      "ids": [
+        "title",
+        "description",
+        "h1",
+        "https",
+        "canonical",
+        "robots",
+        "sitemap"
+      ]
+    },
+    {
+      "name": "First-time guests",
+      "soft": false,
+      "ids": [
+        "service_times",
+        "address",
+        "visit_nav",
+        "visit",
+        "map"
+      ]
+    },
+    {
+      "name": "Contact and giving",
+      "soft": false,
+      "ids": [
+        "tel",
+        "contact",
+        "give"
+      ]
+    },
+    {
+      "name": "About and local identity",
+      "soft": false,
+      "ids": [
+        "beliefs",
+        "city"
+      ]
+    },
+    {
+      "name": "Heads-up (never counted as a fail)",
+      "soft": true,
+      "ids": [
+        "menu_size",
+        "labels"
+      ]
+    }
+  ],
   "checks": [
     {
       "id": "viewport",
       "group": "Mobile",
       "verdict": "pass",
       "finding": "The page has a viewport tag that tells phones to fit it to the screen, which is what Lighthouse's viewport audit checks for.",
-      "source": "width=device-width, initial-scale=1",
+      "source": "homepage_html",
       "label": "Mobile viewport tag"
     },
     {
@@ -21,7 +88,7 @@
       "group": "Mobile",
       "verdict": "pass",
       "finding": "The viewport tag does not block pinch-to-zoom, so visitors can enlarge text if they need to.",
-      "source": "width=device-width, initial-scale=1",
+      "source": "homepage_html",
       "label": "Pinch-to-zoom allowed"
     },
     {
@@ -29,7 +96,7 @@
       "group": "Mobile",
       "verdict": "fail",
       "finding": "The page's own CSS sets some text below 12px (10px, 11px); Lighthouse flags pages where less than 60% of text is 12px or larger, so this is worth a look.",
-      "source": "10px, 11px",
+      "source": "homepage_html",
       "label": "Text size (code hint)"
     },
     {
@@ -37,7 +104,7 @@
       "group": "Speed",
       "verdict": "pass",
       "finding": "In Google's simulated mobile test, the Lighthouse performance score is 96/100 (good; 90+ is good) and Largest Contentful Paint is 1.8 s (good); Google calls 2.5 s or less good. Also measured: layout shift (CLS) 0.02 (good), Total Blocking Time 120 ms (good).",
-      "source": "strategy=mobile score=96 lcp=1.8 s cls=0.02 tbt=120 ms",
+      "source": "google_pagespeed",
       "label": "Mobile speed (Google PageSpeed)"
     },
     {
@@ -45,7 +112,7 @@
       "group": "SEO basics",
       "verdict": "pass",
       "finding": "The page has a title, \"Grace Church\", which Google often uses as the headline in results.",
-      "source": "Grace Church",
+      "source": "homepage_html",
       "label": "Page title"
     },
     {
@@ -53,7 +120,7 @@
       "group": "SEO basics",
       "verdict": "pass",
       "finding": "The page has a meta description, which Google may use as the snippet under the title.",
-      "source": "Worship, kids, and a midweek meal.",
+      "source": "homepage_html",
       "label": "Meta description"
     },
     {
@@ -61,7 +128,7 @@
       "group": "SEO basics",
       "verdict": "pass",
       "finding": "The page has a main heading: \"Grace Church\".",
-      "source": "Grace Church",
+      "source": "homepage_html",
       "label": "Main heading (H1)"
     },
     {
@@ -69,7 +136,7 @@
       "group": "SEO basics",
       "verdict": "pass",
       "finding": "The site loads over https.",
-      "source": "https",
+      "source": "homepage_html",
       "label": "Secure (https)"
     },
     {
@@ -77,7 +144,7 @@
       "group": "SEO basics",
       "verdict": "fail",
       "finding": "The page has no canonical link; that is optional, but without it Google picks the preferred version itself.",
-      "source": "absent",
+      "source": "homepage_html",
       "label": "Canonical link"
     },
     {
@@ -85,7 +152,7 @@
       "group": "SEO basics",
       "verdict": "pass",
       "finding": "The site has a robots.txt file and it does not block the whole site.",
-      "source": "found; User-agent: * does not disallow /",
+      "source": "robots_sitemap_fetch",
       "label": "robots.txt"
     },
     {
@@ -93,7 +160,7 @@
       "group": "SEO basics",
       "verdict": "pass",
       "finding": "We found an XML sitemap listing the site's pages for search engines.",
-      "source": "https://www.grace.example/sitemap.xml",
+      "source": "robots_sitemap_fetch",
       "label": "Sitemap"
     },
     {
@@ -101,7 +168,7 @@
       "group": "First-time guests",
       "verdict": "pass",
       "finding": "The homepage (footer included) shows a worship day and time; Lifeway reports hard-to-find times are a top reason guests don't come.",
-      "source": "homepage",
+      "source": "homepage_html",
       "label": "Service times"
     },
     {
@@ -109,7 +176,7 @@
       "group": "First-time guests",
       "verdict": "pass",
       "finding": "The homepage (footer included) shows a street address; Lifeway's 2023 survey found location among the most helpful website items (66%).",
-      "source": "homepage; 100 Main Street; text",
+      "source": "homepage_html",
       "label": "Street address"
     },
     {
@@ -117,7 +184,7 @@
       "group": "First-time guests",
       "verdict": "pass",
       "finding": "The menu has a first-time guest link (\"I'm New\"), which Lifeway recommends prioritizing.",
-      "source": "label=I'm New href=/im-new",
+      "source": "homepage_html",
       "label": "Visit path in the menu"
     },
     {
@@ -125,7 +192,7 @@
       "group": "First-time guests",
       "verdict": "pass",
       "finding": "A guest can find a visit, directions, or location link, or your address, on the homepage.",
-      "source": "homepage address",
+      "source": "homepage_html",
       "label": "Plan a visit / location"
     },
     {
@@ -133,7 +200,7 @@
       "group": "First-time guests",
       "verdict": "fail",
       "finding": "We couldn't find a Google or Apple Maps link or an embedded map; Grey Matter Research found 28% of visitors look for a map or directions.",
-      "source": "not found",
+      "source": "homepage_html",
       "label": "Map or directions link"
     },
     {
@@ -141,7 +208,7 @@
       "group": "Contact and giving",
       "verdict": "pass",
       "finding": "The homepage has a tap-to-call (tel:) phone link.",
-      "source": "tel:+12525550123",
+      "source": "homepage_html",
       "label": "Tap-to-call phone link"
     },
     {
@@ -149,7 +216,7 @@
       "group": "Contact and giving",
       "verdict": "pass",
       "finding": "The homepage shows a phone number, an email address and a street address; Lifeway's 2023 survey found 39% of website-first visitors valued contact info.",
-      "source": "phone, email, street address",
+      "source": "homepage_html",
       "label": "Contact info"
     },
     {
@@ -157,7 +224,7 @@
       "group": "Contact and giving",
       "verdict": "pass",
       "finding": "The homepage has a give or giving-service link, so giving is one click away.",
-      "source": "href=/give",
+      "source": "homepage_html",
       "label": "Give one click away"
     },
     {
@@ -165,7 +232,7 @@
       "group": "About and local identity",
       "verdict": "pass",
       "finding": "There is a Beliefs or About link; in Lifeway's 2023 survey, beliefs and mission were the most helpful website item (67%).",
-      "source": "label=About href=/about",
+      "source": "homepage_html",
       "label": "Beliefs or About link"
     },
     {
@@ -173,7 +240,7 @@
       "group": "About and local identity",
       "verdict": "info",
       "finding": "We couldn't check this because we couldn't read a city from your address.",
-      "source": "city not read from address",
+      "source": "homepage_html",
       "label": "City in title or main heading"
     },
     {
@@ -181,7 +248,7 @@
       "group": "Heads-up (never counted as a fail)",
       "verdict": "info",
       "finding": "We counted about 6 links in the header menu, which reads as streamlined.",
-      "source": "6 header labels",
+      "source": "homepage_html",
       "label": "Menu size"
     },
     {
@@ -189,21 +256,100 @@
       "group": "Heads-up (never counted as a fail)",
       "verdict": "warn",
       "finding": "Some menu labels may be unfamiliar to a guest (\"Narthex\"); NN/g advises clear, familiar labels over branded or vague words.",
-      "source": "Narthex",
+      "source": "homepage_html",
       "label": "Menu labels"
     }
   ],
-  "groups": [
-    { "name": "Mobile", "checks": ["viewport", "zoom", "font_size"] },
-    { "name": "Speed", "checks": ["speed"] },
-    { "name": "SEO basics", "checks": ["title", "description", "h1", "https", "canonical", "robots", "sitemap"] },
-    { "name": "First-time guests", "checks": ["service_times", "address", "visit_nav", "visit", "map"] },
-    { "name": "Contact and giving", "checks": ["tel", "contact", "give"] },
-    { "name": "About and local identity", "checks": ["beliefs", "city"] },
-    {
-      "name": "Heads-up (never counted as a fail)",
-      "checks": ["menu_size", "labels"],
-      "soft": true
+  "citations": {
+    "viewport": {
+      "name": "Lighthouse: viewport audit",
+      "url": "https://developer.chrome.com/docs/lighthouse/pwa/viewport"
+    },
+    "zoom": {
+      "name": "axe rule meta-viewport (used by Lighthouse accessibility)",
+      "url": "https://dequeuniversity.com/rules/axe/4.10/meta-viewport"
+    },
+    "font_size": {
+      "name": "Lighthouse: font-size audit",
+      "url": "https://developer.chrome.com/docs/lighthouse/seo/font-size"
+    },
+    "speed": {
+      "name": "Lighthouse performance scoring; web.dev Core Web Vitals",
+      "url": "https://developer.chrome.com/docs/lighthouse/performance/performance-scoring"
+    },
+    "title": {
+      "name": "Google Search Central: title links",
+      "url": "https://developers.google.com/search/docs/appearance/title-link"
+    },
+    "description": {
+      "name": "Google Search Central: snippets",
+      "url": "https://developers.google.com/search/docs/appearance/snippet"
+    },
+    "https": {
+      "name": "Google Search Central: page experience",
+      "url": "https://developers.google.com/search/docs/appearance/page-experience"
+    },
+    "canonical": {
+      "name": "Google Search Central: canonical URLs",
+      "url": "https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls"
+    },
+    "robots": {
+      "name": "Google Search Central: robots.txt",
+      "url": "https://developers.google.com/search/docs/crawling-indexing/robots/intro"
+    },
+    "sitemap": {
+      "name": "Google Search Central: sitemaps",
+      "url": "https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview"
+    },
+    "service_times": {
+      "name": "Lifeway Research, The Front Door Churches Often Forget (2018)",
+      "url": "https://research.lifeway.com/2018/03/06/front-door-church-often-forget/"
+    },
+    "address": {
+      "name": "Lifeway Research, Church Switchers (2023)",
+      "url": "https://research.lifeway.com/2023/11/09/church-switchers-identify-factors-behind-their-decision-expect-a-lot-from-new-congregation/"
+    },
+    "visit_nav": {
+      "name": "Lifeway Research, 7 Best Practices for an Effective Church Website (2025)",
+      "url": "https://research.lifeway.com/2025/04/24/7-best-practices-for-an-effective-church-website/"
+    },
+    "visit": {
+      "name": "Lifeway Research, The Front Door Churches Often Forget (2018)",
+      "url": "https://research.lifeway.com/2018/03/06/front-door-church-often-forget/"
+    },
+    "map": {
+      "name": "Grey Matter Research, online church study",
+      "url": "https://greymatterresearch.com/online-church/"
+    },
+    "tel": {
+      "name": "Lifeway Research, Church Switchers (2023)",
+      "url": "https://research.lifeway.com/2023/11/09/church-switchers-identify-factors-behind-their-decision-expect-a-lot-from-new-congregation/"
+    },
+    "contact": {
+      "name": "Lifeway Research, Church Switchers (2023)",
+      "url": "https://research.lifeway.com/2023/11/09/church-switchers-identify-factors-behind-their-decision-expect-a-lot-from-new-congregation/"
+    },
+    "beliefs": {
+      "name": "Lifeway Research, Church Switchers (2023)",
+      "url": "https://research.lifeway.com/2023/11/09/church-switchers-identify-factors-behind-their-decision-expect-a-lot-from-new-congregation/"
+    },
+    "city": {
+      "name": "Lifeway Research, 7 Best Practices for an Effective Church Website (2025)",
+      "url": "https://research.lifeway.com/2025/04/24/7-best-practices-for-an-effective-church-website/"
+    },
+    "menu_size": {
+      "name": "Lifeway Research, 7 Best Practices for an Effective Church Website (2025)",
+      "url": "https://research.lifeway.com/2025/04/24/7-best-practices-for-an-effective-church-website/"
+    },
+    "labels": {
+      "name": "Nielsen Norman Group, Menu-Design Checklist",
+      "url": "https://www.nngroup.com/articles/menu-design/"
     }
-  ]
+  },
+  "disclaimer": "Automated checks of one public homepage, read from its HTML plus Google PageSpeed Insights when available. They can miss things a person would catch, \"couldn't check\" means the HTML didn't show enough to judge, and passing them does not guarantee any search ranking.",
+  "cta": {
+    "text": "Want a second pair of eyes? Journey Digital, a small, owner-run church web studio, offers a free consultation.",
+    "url": "https://journeydigital.ai/#contact",
+    "email": "sales@journeydigital.ai"
+  }
 }

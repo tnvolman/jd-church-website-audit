@@ -6,7 +6,9 @@
  *
  * Zero dependencies. Stdio JSON-RPC, Content-Length framing.
  * One tool, audit_church_website, POSTs { url, source: "plugin" } to
- * {origin}/api/audit?source=plugin.
+ * {origin}/api/audit?source=plugin. include_cta is sent only when the
+ * caller sets it. false drops cta. The report passes through groups.ids,
+ * citations, disclaimer, and cta.
  *
  * The only configuration is the optional origin override
  * JOURNEY_DIGITAL_AUDIT_BASE_URL. There is no API key.
@@ -39,11 +41,16 @@ const TOP_KEYS = new Set([
   "js_heavy",
   "speed_source",
   "truncated",
-  "checks",
   "groups",
+  "checks",
+  "citations",
+  "disclaimer",
+  "cta",
 ]);
 const CHECK_KEYS = new Set(["id", "group", "verdict", "finding", "source", "label"]);
-const GROUP_KEYS = new Set(["name", "checks", "soft"]);
+const GROUP_KEYS = new Set(["name", "soft", "ids"]);
+const CITATION_KEYS = new Set(["name", "url"]);
+const CTA_KEYS = new Set(["text", "url", "email"]);
 
 const FORMAT_ERROR =
   "The audit service returned a response that does not match the report format, so no check results are shown.";
@@ -66,6 +73,10 @@ const TOOL = {
         type: "string",
         minLength: 1,
         description: "Church website address, with or without https://.",
+      },
+      include_cta: {
+        type: "boolean",
+        description: "When false, the service omits cta. Omit this to keep the service default, which includes cta.",
       },
     },
     required: ["url"],
@@ -145,41 +156,63 @@ function validateReport(data) {
   for (const raw of data.groups) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, message: FORMAT_ERROR };
     if (unknownKeys(raw, GROUP_KEYS).length) return { ok: false, message: FORMAT_ERROR };
-    if (!isNonEmptyString(raw.name) || !Array.isArray(raw.checks) || raw.checks.length === 0) {
-      return { ok: false, message: FORMAT_ERROR };
-    }
-    if (Object.prototype.hasOwnProperty.call(raw, "soft") && typeof raw.soft !== "boolean") {
-      return { ok: false, message: FORMAT_ERROR };
-    }
+    if (!isNonEmptyString(raw.name) || typeof raw.soft !== "boolean") return { ok: false, message: FORMAT_ERROR };
+    if (!Array.isArray(raw.ids) || raw.ids.length === 0) return { ok: false, message: FORMAT_ERROR };
     const ids = [];
-    for (const id of raw.checks) {
+    for (const id of raw.ids) {
       if (typeof id !== "string" || !seenIds.has(id) || listed.has(id)) return { ok: false, message: FORMAT_ERROR };
       const check = checks.find((item) => item.id === id);
       if (!check || check.group !== raw.name) return { ok: false, message: FORMAT_ERROR };
       listed.add(id);
       ids.push(id);
     }
-    const group = { name: raw.name, checks: ids };
-    if (Object.prototype.hasOwnProperty.call(raw, "soft")) group.soft = raw.soft;
-    groups.push(group);
+    groups.push({ name: raw.name, soft: raw.soft, ids });
   }
   if (listed.size !== checks.length) return { ok: false, message: FORMAT_ERROR };
 
-  return {
-    ok: true,
-    report: {
-      url: data.url,
-      final_url: data.final_url,
-      passed: data.passed,
-      total: data.total,
-      couldnt: data.couldnt,
-      js_heavy: data.js_heavy,
-      speed_source: data.speed_source,
-      truncated: data.truncated,
-      checks,
-      groups,
-    },
+  if (!data.citations || typeof data.citations !== "object" || Array.isArray(data.citations)) {
+    return { ok: false, message: FORMAT_ERROR };
+  }
+  const citations = {};
+  for (const key of Object.keys(data.citations)) {
+    const item = data.citations[key];
+    if (!item || typeof item !== "object" || Array.isArray(item)) return { ok: false, message: FORMAT_ERROR };
+    if (unknownKeys(item, CITATION_KEYS).length) return { ok: false, message: FORMAT_ERROR };
+    if (!isNonEmptyString(item.name) || !isNonEmptyString(item.url)) return { ok: false, message: FORMAT_ERROR };
+    citations[key] = { name: item.name, url: item.url };
+  }
+
+  if (typeof data.disclaimer !== "string" || data.disclaimer.trim() === "") {
+    return { ok: false, message: FORMAT_ERROR };
+  }
+
+  let cta;
+  if (Object.prototype.hasOwnProperty.call(data, "cta")) {
+    const raw = data.cta;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, message: FORMAT_ERROR };
+    if (unknownKeys(raw, CTA_KEYS).length) return { ok: false, message: FORMAT_ERROR };
+    if (!isNonEmptyString(raw.text) || !isNonEmptyString(raw.url) || !isNonEmptyString(raw.email)) {
+      return { ok: false, message: FORMAT_ERROR };
+    }
+    cta = { text: raw.text, url: raw.url, email: raw.email };
+  }
+
+  const report = {
+    url: data.url,
+    final_url: data.final_url,
+    passed: data.passed,
+    total: data.total,
+    couldnt: data.couldnt,
+    js_heavy: data.js_heavy,
+    speed_source: data.speed_source,
+    truncated: data.truncated,
+    groups,
+    checks,
+    citations,
+    disclaimer: data.disclaimer,
   };
+  if (cta) report.cta = cta;
+  return { ok: true, report };
 }
 
 function resolveBase() {
@@ -263,24 +296,31 @@ function httpError(status, text) {
   } catch (_err) {
     parsed = null;
   }
-  const err = parsed && parsed.error && typeof parsed.error === "object" ? parsed.error : null;
-  const message = err && typeof err.message === "string" ? err.message.trim() : "";
+  let code = "";
+  let message = "";
+  let limits = "";
+  if (parsed && typeof parsed.error === "string") {
+    code = parsed.error.trim();
+    message = typeof parsed.message === "string" ? parsed.message.trim() : "";
+  } else if (parsed && parsed.error && typeof parsed.error === "object") {
+    code = typeof parsed.error.code === "string" ? parsed.error.code.trim() : "";
+    message = typeof parsed.error.message === "string" ? parsed.error.message.trim() : "";
+    if (
+      parsed.error.limits &&
+      typeof parsed.error.limits === "object" &&
+      Number.isInteger(parsed.error.limits.per_hour) &&
+      Number.isInteger(parsed.error.limits.per_day)
+    ) {
+      limits = ` Limit: ${parsed.error.limits.per_hour} per hour and ${parsed.error.limits.per_day} per day.`;
+    }
+  }
   if (!message) {
     return toolError(
       `The audit service returned HTTP ${status} without a usable error message, so no check results are shown.`
     );
   }
-  const code = err && typeof err.code === "string" && err.code.trim() ? `${err.code}: ` : "";
-  let limits = "";
-  if (
-    err.limits &&
-    typeof err.limits === "object" &&
-    Number.isInteger(err.limits.per_hour) &&
-    Number.isInteger(err.limits.per_day)
-  ) {
-    limits = ` Limit: ${err.limits.per_hour} per hour and ${err.limits.per_day} per day.`;
-  }
-  return toolError(`${code}${message}${limits} No check results are shown.`);
+  const prefix = code ? `${code}: ` : "";
+  return toolError(`${prefix}${message}${limits} No check results are shown.`);
 }
 
 async function auditTool(params) {
@@ -301,6 +341,9 @@ async function auditTool(params) {
   if (typeof args.url !== "string" || args.url.trim() === "") {
     return toolError("A church website address is required. No check results are shown.");
   }
+  if (Object.prototype.hasOwnProperty.call(args, "include_cta") && typeof args.include_cta !== "boolean") {
+    return toolError("include_cta must be true or false. No check results are shown.");
+  }
 
   let endpoint;
   try {
@@ -309,9 +352,12 @@ async function auditTool(params) {
     return toolError(`${err.message} No check results are shown.`);
   }
 
+  const payload = { url: args.url.trim(), source: "plugin" };
+  if (typeof args.include_cta === "boolean") payload.include_cta = args.include_cta;
+
   let response;
   try {
-    response = await postJson(endpoint, { url: args.url.trim(), source: "plugin" });
+    response = await postJson(endpoint, payload);
   } catch (err) {
     const detail = err && err.message ? err.message : "request failed";
     return toolError(`The audit service could not be reached, so no check results are shown. (${detail})`);

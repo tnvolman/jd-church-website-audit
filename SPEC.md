@@ -1,8 +1,8 @@
 # Church website audit JSON endpoint
 
-Proposed contract for Journey Digital to add to the-forge. The live page at [https://journeydigital.ai/audit](https://journeydigital.ai/audit) stays a human form. This document does not change how a check is scored.
+Live contract for `POST /api/audit`. The HTML form at [https://journeydigital.ai/audit](https://journeydigital.ai/audit) stays a separate page. This document does not change how a check is scored.
 
-Scoring already lives in `tnvolman/the-forge` `src/routes/jd_audit.py`, function `run_audit()`. The new route serializes that return value. It does not copy the thresholds, the HTML parser, or the check functions into a second implementation.
+Scoring already lives in `tnvolman/the-forge` `src/routes/jd_audit.py`, function `run_audit()`. `report_to_json()` serializes that return value. It does not copy the thresholds, the HTML parser, or the check functions into a second implementation.
 
 Field names below are the names `run_audit()` already returns (`url`, `final_url`, `passed`, `total`, `couldnt`, `js_heavy`, `speed_source`, `truncated`, `checks`, `groups`, and each check's `key`, `group`, `verdict`, `explanation`, `detail`). The JSON check object uses the names this plugin reads. The mapping table is the whole translation.
 
@@ -19,12 +19,19 @@ Field names below are the names `run_audit()` already returns (`url`, `final_url
 }
 ```
 
+Send `include_cta` only to change the default. `false` drops `cta`. Any other value, including omitting the field, keeps `cta`.
+
+```json
+{ "url": "https://example.org", "source": "plugin", "include_cta": false }
+```
+
 | Input | Rule |
 | --- | --- |
 | `url` | Required string. The church address as submitted. `normalize_url()` in `jd_audit.py` already accepts a host without a scheme. |
-| `source` | Required. The query parameter and the JSON field are both the exact string `plugin`. The plugin sends both on every request. |
+| `source` | The query parameter and the JSON field are both the exact string `plugin`. The plugin sends both on every request. |
+| `include_cta` | Optional boolean. `false` omits `cta`. The plugin sends it only when the tool argument is set. |
 
-Missing or mismatched `source` is `400` with `error.code` `bad_request` and `error.message` `source must be plugin.` This route does not take an email address.
+This route does not take an email address. An empty `url` is `400` with `error` `bad_url` and `message` `Send JSON like {"url": "yourchurch.org", "source": "plugin"}.`
 
 The plugin calls only this path. It does not call `POST /audit`.
 
@@ -40,21 +47,31 @@ The plugin calls only this path. It does not call `POST /audit`.
   "js_heavy": false,
   "speed_source": "pagespeed",
   "truncated": false,
+  "groups": [
+    { "name": "Mobile", "soft": false, "ids": ["viewport", "zoom", "font_size"] }
+  ],
   "checks": [
     {
       "id": "viewport",
       "group": "Mobile",
       "verdict": "pass",
       "finding": "The page has a viewport tag that tells phones to fit it to the screen, which is what Lighthouse's viewport audit checks for.",
-      "source": "width=device-width, initial-scale=1"
+      "source": "homepage_html",
+      "label": "Mobile viewport tag"
     }
   ],
-  "groups": [
-    {
-      "name": "Mobile",
-      "checks": ["viewport", "zoom", "font_size"]
+  "citations": {
+    "viewport": {
+      "name": "Lighthouse: viewport audit",
+      "url": "https://developer.chrome.com/docs/lighthouse/pwa/viewport"
     }
-  ]
+  },
+  "disclaimer": "Automated checks of one public homepage, read from its HTML plus Google PageSpeed Insights when available. They can miss things a person would catch, \"couldn't check\" means the HTML didn't show enough to judge, and passing them does not guarantee any search ranking.",
+  "cta": {
+    "text": "Want a second pair of eyes? Journey Digital, a small, owner-run church web studio, offers a free consultation.",
+    "url": "https://journeydigital.ai/#contact",
+    "email": "sales@journeydigital.ai"
+  }
 }
 ```
 
@@ -83,14 +100,29 @@ These keys match `run_audit()` and keep the same meaning.
 | `group` | `group` |
 | `verdict` | `verdict`, mapped in the table below |
 | `finding` | `explanation`. When `detail` is a non-empty string, append one space and `detail`. |
-| `source` | The measurement that check already computed. A new string field. Not a new test. |
-| `label` | Optional. The existing `label`, when included. |
+| `source` | The channel `_check_source()` names. Not a second verdict. |
+| `label` | The existing `label`. |
 
-`source` is required and non-empty. It is exactly what was measured or fetched: a viewport string, a title, a byte size, a PageSpeed number, a href, a path. It is not advice and it is not a second verdict.
+`source` is one of three strings from `_check_source()`:
 
-`groups` follows `run_audit()["groups"]` order. Each entry is `{ "name", "checks", "soft"? }`. `checks` is an array of `id` strings, not nested check objects. `soft` is `true` only on the heads-up group. Every check id appears in exactly one group, and `check.group` equals that group's `name`.
+| `source` | When |
+| --- | --- |
+| `homepage_html` | Every check except speed, robots, and sitemap. |
+| `google_pagespeed` | `speed`, when `speed_source` is `pagespeed`. |
+| `estimate` | `speed`, when `speed_source` is `fallback`. |
+| `robots_sitemap_fetch` | `robots` and `sitemap`. |
 
-No other keys. The plugin rejects a response that adds or omits required keys, rather than guessing.
+The plain-English measurement stays in `finding`. `source` names where that measurement came from. Cite it exactly.
+
+`groups` follows `run_audit()["groups"]` order. Each entry is `{ "name", "soft", "ids" }`. `ids` is an array of check id strings, not nested check objects. `soft` is a boolean, `true` only on the heads-up group. Every check id appears in exactly one group, and `check.group` equals that group's `name`.
+
+`citations` is an object from `CITATIONS`, limited to ids present in this report whose citation is not `None`. `h1` and `give` have no citation. Each value is `{ "name", "url" }`.
+
+`disclaimer` is the fixed string from `API_DISCLAIMER`.
+
+`cta` is present unless `include_cta` is `false`. It is `{ "text", "url", "email" }` with `url` `https://journeydigital.ai/#contact` and `email` `sales@journeydigital.ai`.
+
+The plugin passes these fields through. It still rejects a report that omits a required check field or uses a verdict outside `pass`, `warn`, `fail`, and `info`.
 
 ### Verdict map
 
@@ -108,39 +140,39 @@ No other keys. The plugin rejects a response that adds or omits required keys, r
 
 Ids, labels, and groups as `check_mobile`, `check_speed`, `check_seo`, and `check_findability` already name them.
 
-| `id` | `group` | What `source` quotes |
+| `id` | `group` | `source` |
 | --- | --- | --- |
-| `viewport` | Mobile | The viewport meta content, or `absent`. |
-| `zoom` | Mobile | The viewport string that was inspected. |
-| `font_size` | Mobile | The px sizes found under 12, or `no font-size under 12px in inline styles or style blocks`. |
-| `speed` | Speed | PageSpeed mobile score, LCP, CLS, and TBT when `speed_source` is `pagespeed`. HTML byte size and fetch seconds when `speed_source` is `fallback`. |
-| `title` | SEO basics | The title text, or `absent`. |
-| `description` | SEO basics | The meta description, or `absent`. |
-| `h1` | SEO basics | The first H1 text, or `absent`. |
-| `https` | SEO basics | The scheme of `final_url`. |
-| `canonical` | SEO basics | The canonical href, or `absent`. |
-| `robots` | SEO basics | Whether `robots.txt` was found, and whether `User-agent: *` disallows `/`. |
-| `sitemap` | SEO basics | The sitemap URL that contained a urlset or sitemap index, or the candidates that did not. |
-| `service_times` | First-time guests | `homepage`, the one-click path, or `not found on the homepage or one click away`. |
-| `address` | First-time guests | `homepage` or the one-click path, the city when one was read, and `text` or `schema`. |
-| `visit_nav` | First-time guests | The menu label and href, or `not found`. |
-| `visit` | First-time guests | The visit, directions, location, or address match, or `not found`. |
-| `map` | First-time guests | The map href or iframe src, or `not found`. |
-| `tel` | Contact and giving | The `tel:` href, a visible phone number that was not a `tel:` link, or `not found`. |
-| `contact` | Contact and giving | Which of phone, email, and street address were present. |
-| `give` | Contact and giving | The give or giving-service href, or `not found`. |
-| `beliefs` | About and local identity | The beliefs or about label and href, or `not found`. |
-| `city` | About and local identity | The city read from the address, and whether it occurred in the title or H1. When no city was read, `source` still says that, and the verdict is `info`. |
+| `viewport` | Mobile | `homepage_html` |
+| `zoom` | Mobile | `homepage_html` |
+| `font_size` | Mobile | `homepage_html` |
+| `speed` | Speed | `google_pagespeed` or `estimate` |
+| `title` | SEO basics | `homepage_html` |
+| `description` | SEO basics | `homepage_html` |
+| `h1` | SEO basics | `homepage_html` |
+| `https` | SEO basics | `homepage_html` |
+| `canonical` | SEO basics | `homepage_html` |
+| `robots` | SEO basics | `robots_sitemap_fetch` |
+| `sitemap` | SEO basics | `robots_sitemap_fetch` |
+| `service_times` | First-time guests | `homepage_html` |
+| `address` | First-time guests | `homepage_html` |
+| `visit_nav` | First-time guests | `homepage_html` |
+| `visit` | First-time guests | `homepage_html` |
+| `map` | First-time guests | `homepage_html` |
+| `tel` | Contact and giving | `homepage_html` |
+| `contact` | Contact and giving | `homepage_html` |
+| `give` | Contact and giving | `homepage_html` |
+| `beliefs` | About and local identity | `homepage_html` |
+| `city` | About and local identity | `homepage_html` |
 
 ### Heads-up notes
 
 `soft_warnings()` may add these. They are checks in the same `checks` array. They are not part of the 21 and they are not part of `passed` or `total`. The group name is `Heads-up (never counted as a fail)` and `soft` is `true`. Omit a note the function did not return. Do not invent one.
 
-| `id` | When it exists | What `source` quotes |
+| `id` | When it exists | `source` |
 | --- | --- | --- |
-| `menu_size` | Header labels were counted. | The count. |
-| `labels` | At least one unfamiliar header label was found. | Those labels. |
-| `freshness` | A sermon or event date was read. | That date. |
+| `menu_size` | Header labels were counted. | `homepage_html` |
+| `labels` | At least one unfamiliar header label was found. | `homepage_html` |
+| `freshness` | A sermon or event date was read. | `homepage_html` |
 
 ## Errors
 
@@ -148,16 +180,14 @@ The body is always JSON. Do not send an HTML error page. On every error below, o
 
 ```json
 {
-  "error": {
-    "code": "bad_url",
-    "message": "Only http and https website addresses can be checked."
-  }
+  "error": "bad_url",
+  "message": "Only http and https website addresses can be checked."
 }
 ```
 
 ### 400 bad URL
 
-`error.code` is `bad_url`. `error.message` is the `UnsafeURLError` string `normalize_url()` or `assert_public_url()` already raises:
+`error` is `bad_url`. `message` is the `UnsafeURLError` string `normalize_url()` or `assert_public_url()` already raises:
 
 - `Enter your church website address.`
 - `That address is too long.`
@@ -169,19 +199,14 @@ The body is always JSON. Do not send an HTML error page. On every error below, o
 - `We could not find that website. Check the address.`
 - `The website redirected to an address we cannot check.`
 
-`source` missing or not `plugin` uses `400` and `error.code` `bad_request`, not `bad_url`.
-
 ### 429 rate limit
 
-Same limiter as the HTML form: `RATE_LIMITS` is 5 per hour and 20 per day, per IP. Check the limit before fetching the church site and before calling PageSpeed.
+Same limiter as the HTML form: `RATE_LIMITS` is 5 per hour and 20 per day, per IP, keyed as `api:` plus the client IP. Check the limit before fetching the church site and before calling PageSpeed.
 
 ```json
 {
-  "error": {
-    "code": "rate_limited",
-    "message": "You have run several audits recently. Please try again in a little while.",
-    "limits": { "per_hour": 5, "per_day": 20 }
-  }
+  "error": "rate_limited",
+  "message": "Too many audits from this address. Please try again later."
 }
 ```
 
@@ -191,7 +216,7 @@ A rejected request stores nothing.
 
 `FetchError` from the existing fetch path. The HTML form currently returns these as `400`. This JSON route returns `502` so a bad address and a site that could not be fetched stay distinct.
 
-`error.code` is `fetch_failed`. `error.message` is the existing sentence:
+`error` is `fetch_failed`. `message` is the existing sentence:
 
 - `We could not reach that website ({ExceptionName}).`
 - `The website sent a redirect with no destination.`
@@ -200,7 +225,7 @@ A rejected request stores nothing.
 
 ### 500 unexpected failure
 
-Anything else `run_audit()` raises. `error.code` is `audit_failed`. `error.message` is `Something went wrong running the audit. Please try again.`
+Anything else `run_audit()` raises. `error` is `internal`. `message` is `Something went wrong running the audit.`
 
 ## Guards to keep
 
@@ -209,7 +234,7 @@ Call the existing helpers. Do not rewrite them.
 - `normalize_url()` and `assert_public_url()`: http or https, no username or password, ports 80 and 443 only, public IPs only, no `localhost`, `.local`, or `.internal`.
 - `safe_fetch()`: each redirect hop is checked again, at most 5 redirects, response body capped.
 - `AuditRateLimiter`: 5 per hour and 20 per day per IP.
-- PageSpeed stays inside `run_pagespeed()`. When it does not return a score, `speed_source` is `fallback` and the speed check is the existing estimate. Say that in `finding` and `source`. Do not present the estimate as a Google score.
+- PageSpeed stays inside `run_pagespeed()`. When it does not return a score, `speed_source` is `fallback`, the speed `source` is `estimate`, and `finding` is the existing estimate. Do not present the estimate as a Google score.
 
 ## Privacy for `source=plugin`
 
@@ -226,6 +251,6 @@ Public notes for the plugin:
 
 ## What a client may claim
 
-The report is free and complete: every check in `checks` is part of the result. Nothing in the report is withheld pending a purchase.
+The report is free and complete: every check in `checks` is part of the result. Nothing in the report is withheld pending a purchase. Show `disclaimer` and, when it is present, `cta` as returned. `cta.url` is [https://journeydigital.ai/#contact](https://journeydigital.ai/#contact).
 
-The report does not promise a search ranking. It does not measure whether service times or the address sit on the first screen of a phone, and it does not measure whether the phone menu is easy to open. Those need a human look. Say only what `finding` and `source` say.
+The report does not promise a search ranking. It does not measure whether service times or the address sit on the first screen of a phone, and it does not measure whether the phone menu is easy to open. Those need a human look. Say only what `finding`, `source`, and `disclaimer` say.
