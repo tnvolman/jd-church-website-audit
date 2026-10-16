@@ -53,7 +53,7 @@
       "group": "SEO basics",
       "verdict": "pass",
       "finding": "The page has a meta description, which Google may use as the snippet under the title.",
-      "source": "A church in Wilson.",
+      "source": "Worship, kids, and a midweek meal.",
       "label": "Meta description"
     },
     {
@@ -109,7 +109,7 @@
       "group": "First-time guests",
       "verdict": "pass",
       "finding": "The homepage (footer included) shows a street address; Lifeway's 2023 survey found location among the most helpful website items (66%).",
-      "source": "homepage; city=Wilson; text",
+      "source": "homepage; 100 Main Street; text",
       "label": "Street address"
     },
     {

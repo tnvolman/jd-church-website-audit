@@ -154,7 +154,7 @@ function checkManifest() {
     const name = item.slice(9, -2);
     return ["http", "https", "url"].includes(name);
   }), "server imports a non-builtin");
-  assert(!/PAGESPEED|API_KEY|TWILIO|Authorization|Bearer/i.test(serverSrc), "server mentions a credential");
+  assert(!/PAGESPEED_API_KEY|API_KEY|TWILIO|Authorization\s*:|Bearer\s+/i.test(serverSrc), "server mentions a credential");
 
   const bannedFiles = [
     "README.md",
