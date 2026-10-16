@@ -4,7 +4,10 @@
 /**
  * Church Website Audit MCP server.
  *
- * Zero dependencies. Stdio JSON-RPC, Content-Length framing.
+ * Zero dependencies. Stdio JSON-RPC.
+ * MCP clients send one JSON object per line. Responses use that same
+ * newline-delimited framing. A message that begins with a Content-Length
+ * header is read and answered in that framing instead.
  * One tool, audit_church_website, POSTs { url, source: "plugin" } to
  * {origin}/api/audit?source=plugin. include_cta is sent only when the
  * caller sets it. false drops cta. The report passes through groups.ids,
@@ -14,8 +17,8 @@
  * JOURNEY_DIGITAL_AUDIT_BASE_URL. There is no API key.
  *
  * A response that is not the SPEC.md report is an error. This process
- * does not score a site and does not fill in a missing check, verdict,
- * finding, or source.
+ * does not score a site, does not recompute passed or total, and does not
+ * fill in a missing check, verdict, finding, or source.
  */
 
 const http = require("http");
@@ -375,33 +378,40 @@ async function auditTool(params) {
   if (!validated.ok) return toolError(validated.message);
   return {
     content: [{ type: "text", text: JSON.stringify(validated.report, null, 2) }],
+    structuredContent: validated.report,
     isError: false,
   };
 }
 
-function writeMessage(payload) {
-  const body = Buffer.from(JSON.stringify(payload), "utf8");
-  process.stdout.write(`Content-Length: ${body.length}\r\n\r\n`);
-  process.stdout.write(body);
+function writeMessage(payload, framing) {
+  const json = JSON.stringify(payload);
+  if (framing === "content-length") {
+    const body = Buffer.from(json, "utf8");
+    process.stdout.write(`Content-Length: ${body.length}\r\n\r\n`);
+    process.stdout.write(body);
+    return;
+  }
+  process.stdout.write(json + "\n");
 }
 
-function rpcResult(id, result) {
-  writeMessage({ jsonrpc: "2.0", id, result });
+function rpcResult(id, result, framing) {
+  writeMessage({ jsonrpc: "2.0", id, result }, framing);
 }
 
-function rpcError(id, code, message) {
-  writeMessage({ jsonrpc: "2.0", id, error: { code, message } });
+function rpcError(id, code, message, framing) {
+  writeMessage({ jsonrpc: "2.0", id, error: { code, message } }, framing);
 }
 
-function handle(message) {
+function handle(message, framing) {
+  const frame = framing === "content-length" ? "content-length" : "ndjson";
   if (!message || typeof message !== "object" || Array.isArray(message)) {
-    rpcError(null, -32600, "Invalid Request");
+    rpcError(null, -32600, "Invalid Request", frame);
     return;
   }
   const hasId = Object.prototype.hasOwnProperty.call(message, "id");
   const id = hasId ? message.id : undefined;
   if (typeof message.method !== "string") {
-    if (hasId) rpcError(id, -32600, "Invalid Request");
+    if (hasId) rpcError(id, -32600, "Invalid Request", frame);
     return;
   }
   if (message.method.indexOf("notifications/") === 0) return;
@@ -417,42 +427,83 @@ function handle(message) {
       instructions:
         "Call audit_church_website with the church website address. " +
         "Present every returned check in plain English and cite each source exactly as returned. " +
+        "Report passed/total exactly as returned. Do not recompute the counts. " +
         "If the tool returns an error, show that error only. Do not invent a check result. " +
         "Results are free and complete.",
-    });
+    }, frame);
     return;
   }
   if (message.method === "ping") {
-    rpcResult(id, {});
+    rpcResult(id, {}, frame);
     return;
   }
   if (message.method === "tools/list") {
-    rpcResult(id, { tools: [TOOL] });
+    rpcResult(id, { tools: [TOOL] }, frame);
     return;
   }
   if (message.method === "tools/call") {
     const params = message.params || {};
     chain = chain.then(() =>
       auditTool(params).then(
-        (result) => rpcResult(id, result),
+        (result) => rpcResult(id, result, frame),
         (err) => {
           const detail = err && err.message ? err.message : "request failed";
-          rpcResult(id, toolError(`The audit service could not be reached, so no check results are shown. (${detail})`));
+          rpcResult(
+            id,
+            toolError(`The audit service could not be reached, so no check results are shown. (${detail})`),
+            frame
+          );
         }
       )
     );
     return;
   }
-  rpcError(id, -32601, "Method not found");
+  rpcError(id, -32601, "Method not found", frame);
 }
 
 let buffer = Buffer.alloc(0);
 let chain = Promise.resolve();
 
+function dispatch(text, framing) {
+  try {
+    handle(JSON.parse(text), framing);
+  } catch (_err) {
+    rpcError(null, -32700, "Parse error", framing);
+  }
+}
+
 function consume() {
   while (buffer.length) {
+    if (buffer[0] === 0x0a || buffer[0] === 0x0d) {
+      buffer = buffer.slice(1);
+      continue;
+    }
+
+    if (buffer[0] === 0x7b) {
+      const nl = buffer.indexOf(0x0a);
+      if (nl === -1) return;
+      let line = buffer.slice(0, nl);
+      buffer = buffer.slice(nl + 1);
+      if (line.length && line[line.length - 1] === 0x0d) line = line.slice(0, -1);
+      dispatch(line.toString("utf8"), "ndjson");
+      continue;
+    }
+
     const sep = buffer.indexOf("\r\n\r\n");
-    if (sep === -1) return;
+    if (sep === -1) {
+      let bare = -1;
+      for (let i = 0; i < buffer.length; i++) {
+        if (buffer[i] === 0x0a && (i === 0 || buffer[i - 1] !== 0x0d)) {
+          bare = i;
+          break;
+        }
+      }
+      if (bare === -1) return;
+      buffer = buffer.slice(bare + 1);
+      rpcError(null, -32700, "Parse error", "ndjson");
+      continue;
+    }
+
     const header = buffer.slice(0, sep).toString("utf8");
     const match = header.match(/content-length:\s*(\d+)/i);
     if (!match) {
@@ -468,11 +519,7 @@ function consume() {
     if (buffer.length < start + length) return;
     const body = buffer.slice(start, start + length).toString("utf8");
     buffer = buffer.slice(start + length);
-    try {
-      handle(JSON.parse(body));
-    } catch (_err) {
-      rpcError(null, -32700, "Parse error");
-    }
+    dispatch(body, "content-length");
   }
 }
 

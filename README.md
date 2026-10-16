@@ -6,7 +6,7 @@ Journey Digital is a small, owner-run church web studio in Wilson, NC. It builds
 
 This plugin is not endorsed by Cursor or Grok Bot.
 
-The audit reports mobile basics, Google PageSpeed speed, SEO basics, whether a first-time guest can find service times, the address, an I'm New path, a map, tap-to-call, giving, beliefs, and the city, plus heads-up notes. Every returned check is part of the result. The report is free and complete. The consultation note is the returned `cta`, and its link is https://journeydigital.ai/#contact. Sending `include_cta: false` leaves that note off. Nothing is held back either way.
+The audit reports mobile basics, Google PageSpeed speed, SEO basics, whether a first-time guest can find service times, the address, an I'm New path, a map, tap-to-call, giving, beliefs, and the city, plus heads-up notes. Every returned check is part of the result. The report is free and complete. Report the result as `passed/total` exactly as the API returns `passed` and `total`. Do not hardcode `/21` and do not recompute the counts. The consultation note is the returned `cta`, and its link is https://journeydigital.ai/#contact. Sending `include_cta: false` leaves that note off. Nothing is held back either way.
 
 It does not promise a search ranking. First-screen placement of service times and the address, and whether the phone menu is easy to use, need a human look.
 
