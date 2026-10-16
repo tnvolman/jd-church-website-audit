@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "church-website-audit": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CURSOR_PLUGIN_ROOT}/server/audit-mcp.js"],
+      "cwd": "${CURSOR_PLUGIN_ROOT}"
+    }
+  }
+}

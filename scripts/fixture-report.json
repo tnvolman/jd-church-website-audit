@@ -1,0 +1,209 @@
+{
+  "url": "https://grace.example/",
+  "final_url": "https://www.grace.example/",
+  "passed": 17,
+  "total": 20,
+  "couldnt": 1,
+  "js_heavy": false,
+  "speed_source": "pagespeed",
+  "truncated": false,
+  "checks": [
+    {
+      "id": "viewport",
+      "group": "Mobile",
+      "verdict": "pass",
+      "finding": "The page has a viewport tag that tells phones to fit it to the screen, which is what Lighthouse's viewport audit checks for.",
+      "source": "width=device-width, initial-scale=1",
+      "label": "Mobile viewport tag"
+    },
+    {
+      "id": "zoom",
+      "group": "Mobile",
+      "verdict": "pass",
+      "finding": "The viewport tag does not block pinch-to-zoom, so visitors can enlarge text if they need to.",
+      "source": "width=device-width, initial-scale=1",
+      "label": "Pinch-to-zoom allowed"
+    },
+    {
+      "id": "font_size",
+      "group": "Mobile",
+      "verdict": "fail",
+      "finding": "The page's own CSS sets some text below 12px (10px, 11px); Lighthouse flags pages where less than 60% of text is 12px or larger, so this is worth a look.",
+      "source": "10px, 11px",
+      "label": "Text size (code hint)"
+    },
+    {
+      "id": "speed",
+      "group": "Speed",
+      "verdict": "pass",
+      "finding": "In Google's simulated mobile test, the Lighthouse performance score is 96/100 (good; 90+ is good) and Largest Contentful Paint is 1.8 s (good); Google calls 2.5 s or less good. Also measured: layout shift (CLS) 0.02 (good), Total Blocking Time 120 ms (good).",
+      "source": "strategy=mobile score=96 lcp=1.8 s cls=0.02 tbt=120 ms",
+      "label": "Mobile speed (Google PageSpeed)"
+    },
+    {
+      "id": "title",
+      "group": "SEO basics",
+      "verdict": "pass",
+      "finding": "The page has a title, \"Grace Church\", which Google often uses as the headline in results.",
+      "source": "Grace Church",
+      "label": "Page title"
+    },
+    {
+      "id": "description",
+      "group": "SEO basics",
+      "verdict": "pass",
+      "finding": "The page has a meta description, which Google may use as the snippet under the title.",
+      "source": "A church in Wilson.",
+      "label": "Meta description"
+    },
+    {
+      "id": "h1",
+      "group": "SEO basics",
+      "verdict": "pass",
+      "finding": "The page has a main heading: \"Grace Church\".",
+      "source": "Grace Church",
+      "label": "Main heading (H1)"
+    },
+    {
+      "id": "https",
+      "group": "SEO basics",
+      "verdict": "pass",
+      "finding": "The site loads over https.",
+      "source": "https",
+      "label": "Secure (https)"
+    },
+    {
+      "id": "canonical",
+      "group": "SEO basics",
+      "verdict": "fail",
+      "finding": "The page has no canonical link; that is optional, but without it Google picks the preferred version itself.",
+      "source": "absent",
+      "label": "Canonical link"
+    },
+    {
+      "id": "robots",
+      "group": "SEO basics",
+      "verdict": "pass",
+      "finding": "The site has a robots.txt file and it does not block the whole site.",
+      "source": "found; User-agent: * does not disallow /",
+      "label": "robots.txt"
+    },
+    {
+      "id": "sitemap",
+      "group": "SEO basics",
+      "verdict": "pass",
+      "finding": "We found an XML sitemap listing the site's pages for search engines.",
+      "source": "https://www.grace.example/sitemap.xml",
+      "label": "Sitemap"
+    },
+    {
+      "id": "service_times",
+      "group": "First-time guests",
+      "verdict": "pass",
+      "finding": "The homepage (footer included) shows a worship day and time; Lifeway reports hard-to-find times are a top reason guests don't come.",
+      "source": "homepage",
+      "label": "Service times"
+    },
+    {
+      "id": "address",
+      "group": "First-time guests",
+      "verdict": "pass",
+      "finding": "The homepage (footer included) shows a street address; Lifeway's 2023 survey found location among the most helpful website items (66%).",
+      "source": "homepage; city=Wilson; text",
+      "label": "Street address"
+    },
+    {
+      "id": "visit_nav",
+      "group": "First-time guests",
+      "verdict": "pass",
+      "finding": "The menu has a first-time guest link (\"I'm New\"), which Lifeway recommends prioritizing.",
+      "source": "label=I'm New href=/im-new",
+      "label": "Visit path in the menu"
+    },
+    {
+      "id": "visit",
+      "group": "First-time guests",
+      "verdict": "pass",
+      "finding": "A guest can find a visit, directions, or location link, or your address, on the homepage.",
+      "source": "homepage address",
+      "label": "Plan a visit / location"
+    },
+    {
+      "id": "map",
+      "group": "First-time guests",
+      "verdict": "fail",
+      "finding": "We couldn't find a Google or Apple Maps link or an embedded map; Grey Matter Research found 28% of visitors look for a map or directions.",
+      "source": "not found",
+      "label": "Map or directions link"
+    },
+    {
+      "id": "tel",
+      "group": "Contact and giving",
+      "verdict": "pass",
+      "finding": "The homepage has a tap-to-call (tel:) phone link.",
+      "source": "tel:+12525550123",
+      "label": "Tap-to-call phone link"
+    },
+    {
+      "id": "contact",
+      "group": "Contact and giving",
+      "verdict": "pass",
+      "finding": "The homepage shows a phone number, an email address and a street address; Lifeway's 2023 survey found 39% of website-first visitors valued contact info.",
+      "source": "phone, email, street address",
+      "label": "Contact info"
+    },
+    {
+      "id": "give",
+      "group": "Contact and giving",
+      "verdict": "pass",
+      "finding": "The homepage has a give or giving-service link, so giving is one click away.",
+      "source": "href=/give",
+      "label": "Give one click away"
+    },
+    {
+      "id": "beliefs",
+      "group": "About and local identity",
+      "verdict": "pass",
+      "finding": "There is a Beliefs or About link; in Lifeway's 2023 survey, beliefs and mission were the most helpful website item (67%).",
+      "source": "label=About href=/about",
+      "label": "Beliefs or About link"
+    },
+    {
+      "id": "city",
+      "group": "About and local identity",
+      "verdict": "info",
+      "finding": "We couldn't check this because we couldn't read a city from your address.",
+      "source": "city not read from address",
+      "label": "City in title or main heading"
+    },
+    {
+      "id": "menu_size",
+      "group": "Heads-up (never counted as a fail)",
+      "verdict": "info",
+      "finding": "We counted about 6 links in the header menu, which reads as streamlined.",
+      "source": "6 header labels",
+      "label": "Menu size"
+    },
+    {
+      "id": "labels",
+      "group": "Heads-up (never counted as a fail)",
+      "verdict": "warn",
+      "finding": "Some menu labels may be unfamiliar to a guest (\"Narthex\"); NN/g advises clear, familiar labels over branded or vague words.",
+      "source": "Narthex",
+      "label": "Menu labels"
+    }
+  ],
+  "groups": [
+    { "name": "Mobile", "checks": ["viewport", "zoom", "font_size"] },
+    { "name": "Speed", "checks": ["speed"] },
+    { "name": "SEO basics", "checks": ["title", "description", "h1", "https", "canonical", "robots", "sitemap"] },
+    { "name": "First-time guests", "checks": ["service_times", "address", "visit_nav", "visit", "map"] },
+    { "name": "Contact and giving", "checks": ["tel", "contact", "give"] },
+    { "name": "About and local identity", "checks": ["beliefs", "city"] },
+    {
+      "name": "Heads-up (never counted as a fail)",
+      "checks": ["menu_size", "labels"],
+      "soft": true
+    }
+  ]
+}

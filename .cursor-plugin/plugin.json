@@ -1,0 +1,28 @@
+{
+  "name": "church-website-audit",
+  "displayName": "Church Website Audit by Journey Digital",
+  "version": "1.0.0",
+  "description": "Free church website audit by Michael McClanahan of Journey Digital, a small, owner-run church web studio in Wilson, NC. Reports mobile basics, Google PageSpeed speed, SEO basics, first-time-guest findability, and heads-up notes. The submitted URL is sent to journeydigital.ai and to Google PageSpeed. Plugin audits store anonymous counts only. Privacy: https://journeydigital.ai/privacy Terms: https://journeydigital.ai/terms Not endorsed by Cursor or Grok Bot.",
+  "author": {
+    "name": "Michael McClanahan",
+    "email": "sales@journeydigital.ai"
+  },
+  "publisher": "Michael McClanahan",
+  "homepage": "https://journeydigital.ai/audit",
+  "license": "MIT",
+  "logo": "assets/icon.png",
+  "keywords": [
+    "church",
+    "website",
+    "audit",
+    "pagespeed",
+    "journey-digital"
+  ],
+  "tags": [
+    "church",
+    "audit",
+    "website"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
+}
