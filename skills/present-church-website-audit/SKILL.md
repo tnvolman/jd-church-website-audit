@@ -25,9 +25,11 @@ If the tool returns an error, or its text says no check results are shown, repea
 
 Use the report as the whole result. Every check in `checks` is part of the free report. Show them all before you mention the offer.
 
-Lead with the returned counts and the final address. Use `passed`, `total`, `couldnt`, and `final_url` as numbers and text from the report. Do not adjust them.
+Lead with the returned counts and the final address. Report the result as `{passed}/{total}` exactly as the API returned `passed` and `total`. Do not hardcode `/21`. Do not add, subtract, or otherwise recompute the counts.
 
-> {passed} of {total} checks passed. {couldnt} could not be checked from the page code. Checked: {final_url}.
+> {passed}/{total} checks passed. {couldnt} could not be checked from the page code. Checked: {final_url}.
+
+Use `passed`, `total`, `couldnt`, and `final_url` as numbers and text from the report. Do not adjust them.
 
 Skip the "could not be checked" sentence when `couldnt` is 0.
 
@@ -45,13 +47,13 @@ Walk `groups` in order. Inside each group, walk `ids` in order and present the m
 
 For each check:
 
-1. Verdict word, from the returned `verdict` only:
+1. Verdict word, from the returned `verdict` only. Show that verdict with its `finding` and `source` unchanged. A check that could not be run may arrive as `info` or as `fail`. Accept either. Do not swap one for the other.
    - `pass` — Pass
    - `fail` — Needs work
    - `warn` — Heads-up. These notes are not counted as a failed check.
    - `info` — Couldn't check, when the finding says the check could not be read or checked. Otherwise Note. Never call an `info` result a pass or a fail.
 2. The returned `label` when it is present. When it is absent, use the `id`.
-3. The `finding` sentence, unchanged in meaning. Do not extend it.
+3. The `finding`, unchanged. Do not extend it.
 4. A source line. Copy `source` exactly as returned: same characters, no ellipsis, no correction, no paraphrase.
 
 Example shape:

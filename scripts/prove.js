@@ -124,6 +124,29 @@ function checkManifest() {
   assert(skill.includes("sales@journeydigital.ai"), "skill contact");
   assert(!skill.includes("$1,500"), "skill must not hardcode a price");
   assert(skill.includes("cite each source exactly") || skill.includes("Copy `source` exactly"), "skill cites source");
+  assert(
+    skill.includes("Report the result as `{passed}/{total}` exactly as the API returned `passed` and `total`."),
+    "skill score line"
+  );
+  assert(skill.includes("Do not hardcode `/21`."), "skill rejects a fixed /21");
+  assert(skill.includes("Do not add, subtract, or otherwise recompute the counts."), "skill does no client-side math");
+  assert(
+    skill.includes("A check that could not be run may arrive as `info` or as `fail`."),
+    "skill accepts info and fail"
+  );
+  assert(
+    skill.includes("Show that verdict with its `finding` and `source` unchanged."),
+    "skill presents verdict unchanged"
+  );
+  assert(!skill.includes("{passed}/21"), "skill must not print a fixed /21");
+
+  const readme = read("README.md");
+  assert(
+    readme.includes("Report the result as `passed/total` exactly as the API returns `passed` and `total`."),
+    "README score line"
+  );
+  assert(readme.includes("Do not hardcode `/21` and do not recompute the counts."), "README rejects a fixed /21");
+  assert(!readme.includes("passed/21"), "README must not print a fixed /21");
 
   const license = read("LICENSE");
   assert(license.startsWith("MIT License"), "LICENSE heading");
@@ -158,6 +181,9 @@ function checkManifest() {
     return ["http", "https", "url"].includes(name);
   }), "server imports a non-builtin");
   assert(!/PAGESPEED_API_KEY|API_KEY|TWILIO|Authorization\s*:|Bearer\s+/i.test(serverSrc), "server mentions a credential");
+  assert(!serverSrc.includes("/21"), "server hardcodes /21");
+  assert(!/passed\s*[+\-]=/.test(serverSrc), "server adjusts passed");
+  assert(serverSrc.includes("structuredContent: validated.report"), "server returns structuredContent");
 
   const bannedFiles = [
     "README.md",
@@ -195,11 +221,13 @@ function syntaxCheck(rel) {
 }
 
 class Client {
-  constructor(child) {
+  constructor(child, framing) {
     this.child = child;
+    this.framing = framing || "ndjson";
     this.buf = Buffer.alloc(0);
     this.waiters = [];
     this.stderr = "";
+    this.lastFraming = "";
     child.stdout.on("data", (chunk) => {
       this.buf = Buffer.concat([this.buf, chunk]);
       this.drain();
@@ -213,25 +241,75 @@ class Client {
     });
   }
 
+  fail(err) {
+    const waiter = this.waiters.shift();
+    if (waiter) waiter.reject(err);
+  }
+
+  take() {
+    if (this.buf[0] === 0x7b) {
+      const nl = this.buf.indexOf(0x0a);
+      if (nl === -1) return null;
+      let line = this.buf.slice(0, nl);
+      const rest = this.buf.slice(nl + 1);
+      if (line.length && line[line.length - 1] === 0x0d) line = line.slice(0, -1);
+      const raw = line.toString("utf8");
+      return { framing: "ndjson", msg: JSON.parse(raw), rest, raw };
+    }
+    const sep = this.buf.indexOf("\r\n\r\n");
+    if (sep === -1) return null;
+    const header = this.buf.slice(0, sep).toString("utf8");
+    const match = header.match(/content-length:\s*(\d+)/i);
+    if (!match) throw new Error(`bad frame header: ${header}`);
+    const length = Number(match[1]);
+    const start = sep + 4;
+    if (this.buf.length < start + length) return null;
+    const raw = this.buf.slice(start, start + length).toString("utf8");
+    return {
+      framing: "content-length",
+      msg: JSON.parse(raw),
+      rest: this.buf.slice(start + length),
+      raw,
+    };
+  }
+
   drain() {
-    while (this.waiters.length) {
-      const sep = this.buf.indexOf("\r\n\r\n");
-      if (sep === -1) return;
-      const header = this.buf.slice(0, sep).toString("utf8");
-      const match = header.match(/content-length:\s*(\d+)/i);
-      if (!match) throw new Error(`bad frame header: ${header}`);
-      const length = Number(match[1]);
-      const start = sep + 4;
-      if (this.buf.length < start + length) return;
-      const body = this.buf.slice(start, start + length).toString("utf8");
-      this.buf = this.buf.slice(start + length);
-      this.waiters.shift().resolve(JSON.parse(body));
+    try {
+      while (this.waiters.length && this.buf.length) {
+        while (this.buf.length && (this.buf[0] === 0x0a || this.buf[0] === 0x0d)) {
+          this.buf = this.buf.slice(1);
+        }
+        if (!this.buf.length) return;
+        const taken = this.take();
+        if (!taken) return;
+        if (this.framing !== "auto" && taken.framing !== this.framing) {
+          this.fail(new Error(`expected ${this.framing} framing, got ${taken.framing}`));
+          return;
+        }
+        this.buf = taken.rest;
+        this.lastFraming = taken.framing;
+        this.waiters.shift().resolve(taken.msg);
+      }
+    } catch (err) {
+      this.fail(err);
     }
   }
 
-  request(obj, timeoutMs = 5000) {
-    const body = Buffer.from(JSON.stringify(obj), "utf8");
-    const frame = Buffer.concat([Buffer.from(`Content-Length: ${body.length}\r\n\r\n`, "ascii"), body]);
+  write(obj, options) {
+    const framing = (options && options.framing) || (this.framing === "auto" ? "ndjson" : this.framing);
+    const pretty = Boolean(options && options.pretty);
+    const json = pretty ? JSON.stringify(obj, null, 2) : JSON.stringify(obj);
+    if (framing === "content-length") {
+      const body = Buffer.from(json, "utf8");
+      this.child.stdin.write(`Content-Length: ${body.length}\r\n\r\n`);
+      this.child.stdin.write(body);
+      return;
+    }
+    if (json.indexOf("\n") !== -1) throw new Error("newline-delimited message contains a newline");
+    this.child.stdin.write(json + "\n");
+  }
+
+  request(obj, timeoutMs = 5000, options) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`timeout waiting for ${obj.method}`)), timeoutMs);
       this.waiters.push({
@@ -244,14 +322,12 @@ class Client {
           reject(err);
         },
       });
-      this.child.stdin.write(frame);
+      this.write(obj, options);
     });
   }
 
-  notify(obj) {
-    const body = Buffer.from(JSON.stringify(obj), "utf8");
-    this.child.stdin.write(`Content-Length: ${body.length}\r\n\r\n`);
-    this.child.stdin.write(body);
+  notify(obj, options) {
+    this.write(obj, options);
   }
 
   close() {
@@ -259,7 +335,7 @@ class Client {
   }
 }
 
-function startClient(baseUrl, extraEnv) {
+function startClient(baseUrl, extraEnv, framing) {
   const env = { ...process.env, ...(extraEnv || {}) };
   if (baseUrl == null) delete env.JOURNEY_DIGITAL_AUDIT_BASE_URL;
   else env.JOURNEY_DIGITAL_AUDIT_BASE_URL = baseUrl;
@@ -268,7 +344,25 @@ function startClient(baseUrl, extraEnv) {
     env,
     stdio: ["pipe", "pipe", "pipe"],
   });
-  return new Client(child);
+  return new Client(child, framing || "ndjson");
+}
+
+function startClientFromMcpJson(baseUrl) {
+  const mcp = JSON.parse(read("mcp.json"));
+  const spec = mcp.mcpServers["church-website-audit"];
+  const pluginRoot = root;
+  const subst = (value) => String(value).split("${CURSOR_PLUGIN_ROOT}").join(pluginRoot);
+  const args = spec.args.map(subst);
+  const cwd = subst(spec.cwd);
+  const env = { ...process.env, CURSOR_PLUGIN_ROOT: pluginRoot, JOURNEY_DIGITAL_AUDIT_BASE_URL: baseUrl };
+  const child = spawn(spec.command, args, {
+    cwd,
+    env,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  const client = new Client(child, "ndjson");
+  client.launch = { command: spec.command, args, cwd };
+  return client;
 }
 
 function toolText(response) {
@@ -362,6 +456,20 @@ async function main() {
         send(200, broken);
         return;
       }
+      if (target.endsWith("/asis")) {
+        const payload = JSON.parse(JSON.stringify(fixture));
+        const city = payload.checks.find((item) => item.id === "city");
+        const beliefs = payload.checks.find((item) => item.id === "beliefs");
+        city.verdict = "info";
+        city.finding = "We couldn't check this because we couldn't read a city from your address.";
+        beliefs.verdict = "fail";
+        beliefs.finding = "We couldn't verify beliefs from the page code.";
+        payload.passed = 17;
+        payload.total = 21;
+        payload.couldnt = 2;
+        send(200, payload);
+        return;
+      }
       if (target.endsWith("/ok")) {
         const payload = JSON.parse(JSON.stringify(fixture));
         let includeCta = true;
@@ -399,6 +507,7 @@ async function main() {
     assert(init.result && init.result.protocolVersion === "2024-11-05", "protocol");
     assert(init.result.serverInfo.name === "church-website-audit", "server name");
     assert(init.result.capabilities && init.result.capabilities.tools, "tools capability");
+    assert(client.lastFraming === "ndjson", "initialize response is newline-delimited");
     client.notify({ jsonrpc: "2.0", method: "notifications/initialized" });
     record("initialize", true);
   } catch (err) {
@@ -428,6 +537,7 @@ async function main() {
     assert(call.result.isError === false, "isError should be false");
     const report = JSON.parse(text);
     assert(deepEqual(report, fixture), `report was rewritten:\n${text}`);
+    assert(deepEqual(call.result.structuredContent, report), "structuredContent matches text");
     const hit = hits[hits.length - 1];
     assert(hits.length === before + 1, "mock was not called once");
     assert(hit.method === "POST", "method");
@@ -461,7 +571,9 @@ async function main() {
     const text = toolText(call);
     assert(call.result.isError === false, "isError should be false");
     const report = JSON.parse(text);
+    assert(deepEqual(call.result.structuredContent, report), "structuredContent matches text");
     assert(!Object.prototype.hasOwnProperty.call(report, "cta"), "cta must be absent");
+    assert(!Object.prototype.hasOwnProperty.call(call.result.structuredContent, "cta"), "structuredContent omits cta");
     assert(report.disclaimer === fixture.disclaimer, "disclaimer remains");
     assert(deepEqual(report.citations, fixture.citations), "citations passed through");
     assert(report.checks.length === fixture.checks.length, "checks dropped");
@@ -480,6 +592,30 @@ async function main() {
     record("include_cta false drops cta", false, `${err.message}\n${client.stderr}`);
   }
 
+  try {
+    const call = await client.request({
+      jsonrpc: "2.0",
+      id: "asis",
+      method: "tools/call",
+      params: { name: "audit_church_website", arguments: { url: "https://grace.example/asis" } },
+    });
+    const text = toolText(call);
+    assert(call.result.isError === false, "isError should be false");
+    const report = JSON.parse(text);
+    const city = report.checks.find((item) => item.id === "city");
+    const beliefs = report.checks.find((item) => item.id === "beliefs");
+    assert(city.verdict === "info", "couldn't-run info verdict");
+    assert(city.finding === "We couldn't check this because we couldn't read a city from your address.", "info finding");
+    assert(beliefs.verdict === "fail", "couldn't-run fail verdict");
+    assert(beliefs.finding === "We couldn't verify beliefs from the page code.", "fail finding");
+    assert(beliefs.source === "homepage_html", "fail source");
+    assert(report.passed === 17 && report.total === 21 && report.couldnt === 2, "counts were recomputed");
+    assert(deepEqual(call.result.structuredContent, report), "structuredContent matches text");
+    record("passed/total and both couldn't-run verdicts pass through", true, `${report.passed}/${report.total}`);
+  } catch (err) {
+    record("passed/total and both couldn't-run verdicts pass through", false, `${err.message}\n${client.stderr}`);
+  }
+
   async function expectClosed(name, url, includes) {
     try {
       const call = await client.request({
@@ -490,6 +626,7 @@ async function main() {
       });
       const text = toolText(call);
       assert(call.result.isError === true, "isError should be true");
+      assert(call.result.structuredContent == null, "error has no structuredContent");
       assertNoReport(text);
       for (const bit of includes) assert(text.includes(bit), `missing "${bit}" in:\n${text}`);
       record(name, true);
@@ -527,6 +664,7 @@ async function main() {
     });
     const text = toolText(call);
     assert(call.result.isError === true, "blank url should error");
+    assert(call.result.structuredContent == null, "error has no structuredContent");
     assertNoReport(text);
     assert(hits.length === before, "blank url must not call the service");
     record("fail-closed blank url", true);
@@ -555,6 +693,7 @@ async function main() {
     });
     const text = toolText(call);
     assert(call.result.isError === true, "bad base should error");
+    assert(call.result.structuredContent == null, "error has no structuredContent");
     assertNoReport(text);
     assert(text.includes("origin only"), text);
     assert(hits.length === before, "bad base must not call the service");
@@ -582,6 +721,7 @@ async function main() {
     });
     const text = toolText(call);
     assert(call.result.isError === true, "unreachable should error");
+    assert(call.result.structuredContent == null, "error has no structuredContent");
     assertNoReport(text);
     assert(/could not be reached/i.test(text), text);
     assert(!text.includes("grace.example"), "unreachable must not invent the fixture");
@@ -590,6 +730,106 @@ async function main() {
     record("fail-closed unreachable", false, `${err.message}\n${down.stderr}`);
   }
   down.close();
+
+  const framed = startClient(origin, {}, "content-length");
+  try {
+    const init = await framed.request(
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "prove", version: "0.0.0" },
+        },
+      },
+      5000,
+      { pretty: true }
+    );
+    assert(init.result && init.result.serverInfo.name === "church-website-audit", "content-length init");
+    assert(framed.lastFraming === "content-length", "content-length response framing");
+    framed.notify({ jsonrpc: "2.0", method: "notifications/initialized" }, { pretty: true });
+    const listed = await framed.request({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+    assert(listed.result.tools[0].name === "audit_church_website", "content-length tools/list");
+    assert(framed.lastFraming === "content-length", "content-length list framing");
+    const call = await framed.request({
+      jsonrpc: "2.0",
+      id: 3,
+      method: "tools/call",
+      params: { name: "audit_church_website", arguments: { url: "https://grace.example/ok" } },
+    });
+    const report = JSON.parse(toolText(call));
+    assert(deepEqual(report, fixture), "content-length report");
+    assert(deepEqual(call.result.structuredContent, report), "content-length structuredContent");
+    record("content-length framing", true);
+  } catch (err) {
+    record("content-length framing", false, `${err.message}\n${framed.stderr}`);
+  }
+  framed.close();
+
+  const mixed = startClient(origin, {}, "auto");
+  try {
+    const init = await mixed.request(
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "prove", version: "0.0.0" },
+        },
+      },
+      5000,
+      { framing: "content-length" }
+    );
+    assert(init.result && init.result.protocolVersion === "2024-11-05", "mixed init");
+    assert(mixed.lastFraming === "content-length", "first response follows content-length");
+    const listed = await mixed.request(
+      { jsonrpc: "2.0", id: 2, method: "tools/list" },
+      5000,
+      { framing: "ndjson" }
+    );
+    assert(listed.result.tools[0].name === "audit_church_website", "mixed tools/list");
+    assert(mixed.lastFraming === "ndjson", "second response follows newline-delimited");
+    record("framing auto-detect per message", true);
+  } catch (err) {
+    record("framing auto-detect per message", false, `${err.message}\n${mixed.stderr}`);
+  }
+  mixed.close();
+
+  const launched = startClientFromMcpJson(origin);
+  try {
+    assert(launched.launch.command === "node", "mcp command");
+    assert(launched.launch.cwd === root, "mcp cwd");
+    assert(
+      launched.launch.args.length === 1 && launched.launch.args[0] === path.join(root, "server/audit-mcp.js"),
+      `mcp args ${launched.launch.args.join(" ")}`
+    );
+    assert(!launched.launch.args.some((arg) => arg.includes("${CURSOR_PLUGIN_ROOT}")), "unsubstituted plugin root");
+    const init = await launched.request({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "prove", version: "0.0.0" },
+      },
+    });
+    assert(init.result && init.result.protocolVersion === "2024-11-05", "mcp.json protocol");
+    assert(launched.lastFraming === "ndjson", "mcp.json spawn speaks newline-delimited JSON");
+    launched.notify({ jsonrpc: "2.0", method: "notifications/initialized" });
+    const listed = await launched.request({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+    assert(listed.result.tools[0].name === "audit_church_website", "mcp.json tools/list");
+    assert(launched.lastFraming === "ndjson", "mcp.json tools/list framing");
+    record("spawn as mcp.json", true);
+  } catch (err) {
+    record("spawn as mcp.json", false, `${err.message}\n${launched.stderr}`);
+  }
+  launched.close();
+
   mock.close();
 
   const failed = steps.filter((step) => !step.ok).length;
