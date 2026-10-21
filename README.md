@@ -30,7 +30,7 @@ One MCP tool, `audit_church_website`, sends one church homepage to Journey Digit
 - **About and local identity:** beliefs or about link, city in the title or main heading.
 - **Heads-up notes** (never counted as a fail): menu size and menu labels.
 
-The result is `passed/total` exactly as the API returns it, with a plain-English finding and a cited source for each check. It covers church website SEO basics only and **does not guarantee any search ranking**. Things like first-screen placement and how easy the phone menu feels still need a human look.
+Report the result as `passed/total` exactly as the API returns `passed` and `total`. Do not hardcode `/21` and do not recompute the counts. Each check comes with a plain-English finding and a cited source for each check. It covers church website SEO basics only and **does not guarantee any search ranking**. Things like first-screen placement and how easy the phone menu feels still need a human look.
 
 ## Usage
 
@@ -60,7 +60,7 @@ Set `JOURNEY_DIGITAL_AUDIT_BASE_URL` to use another origin (default `https://jou
 
 ## Privacy
 
-The address you submit is sent to journeydigital.ai, which fetches that page, and to Google PageSpeed for the speed check. Plugin audits store anonymous counts only. See the [privacy policy](https://journeydigital.ai/privacy), [terms](https://journeydigital.ai/terms) and [PRIVACY.md](PRIVACY.md).
+The church website address you submit is sent to journeydigital.ai, which fetches that page, and to Google PageSpeed for the speed check. Plugin audits store anonymous counts only. See the [privacy policy](https://journeydigital.ai/privacy), [terms](https://journeydigital.ai/terms) and [PRIVACY.md](PRIVACY.md).
 
 ## What is in this repo
 
@@ -75,7 +75,7 @@ The address you submit is sent to journeydigital.ai, which fetches that page, an
 
 ## About
 
-Built by Michael McClanahan at [Journey Digital, a small church website design studio in Wilson, NC](https://journeydigital.ai/). Questions: sales@journeydigital.ai. Not endorsed by Cursor or Grok Bot.
+Built and published by Michael McClanahan at [Journey Digital, a small church website design studio in Wilson, NC](https://journeydigital.ai/). Questions: sales@journeydigital.ai. Not endorsed by Cursor or Grok Bot.
 
 ## Contributing
 
