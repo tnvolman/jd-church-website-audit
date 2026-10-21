@@ -1,53 +1,86 @@
 # Church Website Audit by Journey Digital
 
-A free Cursor and Grok Bot plugin that asks Journey Digital to check one church homepage and then explains the report in plain English.
+A free church website audit tool (an MCP server and Cursor plugin) that checks mobile, page speed, SEO basics, and whether a first-time visitor can find service times.
 
-Journey Digital is a small, owner-run church web studio in Wilson, NC. It builds church websites anywhere. The publisher is Michael McClanahan, not a company. The only contact is sales@journeydigital.ai.
+![Real audit output for https://www.redeemer.com/: 11/21 checks passed](docs/example-audit.png)
 
-This plugin is not endorsed by Cursor or Grok Bot.
+*Real output of `audit_church_website` for a public church homepage, run 2026-10-21. Finding text is shortened in the image; the full JSON is in [docs/example-audit-redeemer.json](docs/example-audit-redeemer.json).*
 
-The audit reports mobile basics, Google PageSpeed speed, SEO basics, whether a first-time guest can find service times, the address, an I'm New path, a map, tap-to-call, giving, beliefs, and the city, plus heads-up notes. Every returned check is part of the result. The report is free and complete. Report the result as `passed/total` exactly as the API returns `passed` and `total`. Do not hardcode `/21` and do not recompute the counts. The consultation note is the returned `cta`, and its link is https://journeydigital.ai/#contact. Sending `include_cta: false` leaves that note off. Nothing is held back either way.
+## Install
 
-It does not promise a search ranking. First-screen placement of service times and the address, and whether the phone menu is easy to use, need a human look.
+One line, from a clean checkout (Node 18+, zero dependencies). It clones the repo and runs the local self-test:
+
+```bash
+git clone https://github.com/tnvolman/jd-church-website-audit && cd jd-church-website-audit && node scripts/prove.js
+```
+
+Then point your MCP client at `server/audit-mcp.js` (see [Usage](#usage)). In Cursor, the repo also loads as a plugin through `.cursor-plugin/plugin.json`.
+
+Prefer not to install anything? Run the same church website checker in your browser at **[journeydigital.ai/audit](https://journeydigital.ai/audit)**.
+
+## What it checks
+
+One MCP tool, `audit_church_website`, sends one church homepage to Journey Digital's audit and returns every check:
+
+- **Mobile:** viewport tag, pinch-to-zoom, text size.
+- **Speed:** Google PageSpeed mobile performance.
+- **SEO basics:** title, meta description, H1, https, canonical link, robots.txt, sitemap.
+- **First-time guests:** service times, street address, an I'm New / Plan a Visit path, map or directions.
+- **Contact and giving:** tap-to-call, contact info, giving one click away.
+- **About and local identity:** beliefs or about link, city in the title or main heading.
+- **Heads-up notes** (never counted as a fail): menu size and menu labels.
+
+Report the result as `passed/total` exactly as the API returns `passed` and `total`. Do not hardcode `/21` and do not recompute the counts. Each check comes with a plain-English finding and a cited source for each check. It covers church website SEO basics only and **does not guarantee any search ranking**. Things like first-screen placement and how easy the phone menu feels still need a human look.
+
+## Usage
+
+MCP client config (Claude Desktop, Cursor `mcp.json`, and similar):
+
+```json
+{
+  "mcpServers": {
+    "church-website-audit": {
+      "command": "node",
+      "args": ["/absolute/path/to/jd-church-website-audit/server/audit-mcp.js"]
+    }
+  }
+}
+```
+
+Then ask your agent: *"Audit https://example-church.org with audit_church_website."*
+
+Tool arguments:
+
+| Argument | Required | Meaning |
+| --- | --- | --- |
+| `url` | yes | The church homepage to check. |
+| `include_cta` | no | `false` leaves off the consultation note. Nothing else changes. |
+
+Set `JOURNEY_DIGITAL_AUDIT_BASE_URL` to use another origin (default `https://journeydigital.ai`). There is no API key. If the audit service is unreachable or returns a malformed report, the tool returns an error; it never invents results.
 
 ## Privacy
 
-The church website address you submit is sent to journeydigital.ai, which fetches that page. The speed check sends that address to Google PageSpeed.
-
-Plugin audits store anonymous counts only.
-
-- Privacy policy: https://journeydigital.ai/privacy
-- Terms: https://journeydigital.ai/terms
-- Notes in this repo: [PRIVACY.md](PRIVACY.md)
+The church website address you submit is sent to journeydigital.ai, which fetches that page, and to Google PageSpeed for the speed check. Plugin audits store anonymous counts only. See the [privacy policy](https://journeydigital.ai/privacy), [terms](https://journeydigital.ai/terms) and [PRIVACY.md](PRIVACY.md).
 
 ## What is in this repo
 
 | Path | Purpose |
 | --- | --- |
-| `SPEC.md` | JSON contract for `POST /api/audit`. Journey Digital adds this to the-forge. Scoring stays in `jd_audit.py`. |
-| `.cursor-plugin/plugin.json` | Plugin manifest. |
-| `mcp.json` | Stdio MCP server entry. |
-| `server/audit-mcp.js` | Zero-dependency Node server. One tool, `audit_church_website`. |
-| `skills/present-church-website-audit/SKILL.md` | How to present the report. |
-| `assets/icon.png` | 1:1 icon. |
+| `server/audit-mcp.js` | Zero-dependency Node stdio MCP server with one tool. |
+| `mcp.json`, `.cursor-plugin/plugin.json` | Cursor plugin manifest and MCP entry. |
+| `skills/present-church-website-audit/SKILL.md` | How an agent should present the report. |
+| `SPEC.md` | JSON contract for `POST /api/audit`. |
+| `scripts/prove.js` | Self-test against a mock server (no live calls). |
+| `docs/` | The example audit image and its raw JSON. |
 
-The tool POSTs `{"url","source":"plugin"}` to `{origin}/api/audit?source=plugin`. The origin defaults to `https://journeydigital.ai`. Set `JOURNEY_DIGITAL_AUDIT_BASE_URL` to another origin if you need one. There is no API key and no other secret.
+## About
 
-Until that JSON route is live, the tool returns an error. It does not invent check results, and it does not call the HTML form at `/audit`.
+Built and published by Michael McClanahan at [Journey Digital, a small church website design studio in Wilson, NC](https://journeydigital.ai/). Questions: sales@journeydigital.ai. Not endorsed by Cursor or Grok Bot.
 
-## Prove it locally
+## Contributing
 
-```bash
-node --check server/audit-mcp.js
-node scripts/prove.js
-```
-
-`scripts/prove.js` checks the manifest, syntax, MCP `initialize`, `tools/list`, a `tools/call` against a mock server that returns the SPEC shape, and the fail-closed cases. It does not call the live audit.
-
-## Icon
-
-`assets/icon.png` is the mark from https://journeydigital.ai/static/journeydigital_mark.png, centered and unscaled on a solid `#111111` plate. That plate color is the site background, `--bg`, on https://journeydigital.ai/audit. `scripts/build-icon.py` rebuilds it from that URL.
+Issues and pull requests are welcome. Keep the server zero-dependency, run `node scripts/prove.js` before opening a PR, and never hardcode or recompute scores: the tool passes the API's `passed` and `total` through unchanged. Notable changes go in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-[MIT](LICENSE). Copyright 2026 Michael McClanahan. No GPL dependencies.
+[MIT](LICENSE). Copyright 2026 Michael McClanahan.
