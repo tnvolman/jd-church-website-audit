@@ -2,6 +2,7 @@
 
 [![Church Website Audit score on Glama](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/score.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
 [![Church Website Audit listing card on Glama](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/card.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
+[![CI](https://github.com/tnvolman/jd-church-website-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/tnvolman/jd-church-website-audit/actions/workflows/ci.yml)
 
 A free church website audit tool (an MCP server and Cursor plugin) that checks mobile, page speed, SEO basics, and whether a first-time visitor can find service times.
 
