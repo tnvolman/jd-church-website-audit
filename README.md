@@ -80,7 +80,7 @@ The church website address you submit is sent to journeydigital.ai, which fetche
 
 | Path | Purpose |
 | --- | --- |
-| `server/audit-mcp.js` | Stdio entry. The other files in `server/` are the tool schema, report check, and HTTP client. |
+| `server/audit-mcp.js` | Zero-dependency Node stdio MCP server with one tool. |
 | `Dockerfile`, `.dockerignore` | Stdio image: `node:22-alpine`, no npm install, runs as `node`. |
 | `glama.json` | Glama maintainer claim. The published schema has one field, `maintainers`. |
 | `mcp.json`, `.cursor-plugin/plugin.json` | Cursor plugin manifest and MCP entry. |

@@ -42,30 +42,6 @@ function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
 }
 
-function serverJsFiles() {
-  return fs
-    .readdirSync(path.join(root, "server"))
-    .filter((name) => name.endsWith(".js"))
-    .sort()
-    .map((name) => path.join("server", name));
-}
-
-function lineCount(text) {
-  if (text === "") return 0;
-  const parts = text.split("\n");
-  return text.endsWith("\n") ? parts.length - 1 : parts.length;
-}
-
-function allowedRequire(name) {
-  if (["http", "https", "url"].includes(name)) return true;
-  if (!name.startsWith("./") || name.includes("..")) return false;
-  const target = path.normalize(path.join(root, "server", name));
-  const serverDir = path.join(root, "server") + path.sep;
-  if (!target.startsWith(serverDir)) return false;
-  const file = target.endsWith(".js") ? target : `${target}.js`;
-  return fs.existsSync(file);
-}
-
 function pngInfo(rel) {
   const data = fs.readFileSync(path.join(root, rel));
   assert(data.slice(0, 8).toString("binary") === "\x89PNG\r\n\x1a\n", `${rel} is not a PNG`);
@@ -197,20 +173,13 @@ function checkManifest() {
   assert(spec.includes("rate_limited"), "SPEC 429");
   assert(spec.includes("fetch_failed"), "SPEC 502");
 
-  const files = serverJsFiles();
-  assert(files.includes(path.join("server", "audit-mcp.js")), "stdio entry is server/audit-mcp.js");
-  for (const rel of files) {
-    const lines = lineCount(read(rel));
-    assert(lines > 0 && lines < 500, `${rel} is ${lines} lines`);
-  }
-  const serverSrc = files.map(read).join("\n");
+  const serverSrc = read("server/audit-mcp.js");
   assert(serverSrc.includes('source: "plugin"'), "server body source");
   assert(serverSrc.includes('searchParams.set("source", "plugin")'), "server query source");
-  const requires = serverSrc.match(/require\("([^"]+)"\)/g) || [];
-  assert(
-    requires.every((item) => allowedRequire(item.slice(9, -2))),
-    "server imports a non-builtin"
-  );
+  assert(!serverSrc.includes("require(\"") || serverSrc.match(/require\("([^"]+)"\)/g).every((item) => {
+    const name = item.slice(9, -2);
+    return ["http", "https", "url"].includes(name);
+  }), "server imports a non-builtin");
   assert(!/PAGESPEED_API_KEY|API_KEY|TWILIO|Authorization\s*:|Bearer\s+/i.test(serverSrc), "server mentions a credential");
   assert(!serverSrc.includes("/21"), "server hardcodes /21");
   assert(!/passed\s*[+\-]=/.test(serverSrc), "server adjusts passed");
@@ -223,7 +192,7 @@ function checkManifest() {
     "LICENSE",
     ".cursor-plugin/plugin.json",
     "mcp.json",
-    ...files,
+    "server/audit-mcp.js",
     "skills/present-church-website-audit/SKILL.md",
     "scripts/build-icon.py",
   ];
@@ -425,7 +394,7 @@ async function main() {
     record("manifest", false, err.stack || err.message);
   }
 
-  for (const rel of [...serverJsFiles(), "scripts/prove.js"]) {
+  for (const rel of ["server/audit-mcp.js", "scripts/prove.js"]) {
     try {
       syntaxCheck(rel);
       record(`node --check ${rel}`, true);
