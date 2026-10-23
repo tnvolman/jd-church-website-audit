@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- Registry prep only: `server.json` for `io.github.tnvolman/jd-church-website-audit`, the MCPB manifest and `scripts/build-mcpb.js`, and `glama.json`. Nothing was published.
+
 ### Changed
 - Rewrote the README: one-line pitch, a real example audit image (`docs/example-audit.png`), a one-line install, MCP config, and contributing notes.
 
