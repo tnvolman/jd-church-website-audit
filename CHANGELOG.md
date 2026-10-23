@@ -5,12 +5,13 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
-- `Dockerfile` and `.dockerignore`: stdio image on `node:lts-alpine`, no npm install, non-root `node` user.
+- `Dockerfile` and `.dockerignore`: stdio image on digest-pinned `node:22-alpine`, no npm install, non-root `node` user. The image copies `server/`. `.dockerignore` also skips `.env` and `node_modules`.
 - Glama score and card badges in the README.
-- `outputSchema` on `audit_church_website`, plus when-to-call notes in the tool description. The four MCP annotation hints were already set and are unchanged.
+- `outputSchema` on `audit_church_website` (`server/output-schema.js`), plus when-to-call notes in the tool description. The four MCP annotation hints were already set and are unchanged.
 - Registry prep only: `server.json` for `io.github.tnvolman/jd-church-website-audit`, the MCPB manifest and `scripts/build-mcpb.js`, and `glama.json`. Nothing was published.
 
 ### Changed
+- Split `server/audit-mcp.js` into modules under `server/`. The entry point is still `server/audit-mcp.js`.
 - Rewrote the README: one-line pitch, a real example audit image (`docs/example-audit.png`), a one-line install, MCP config, and contributing notes.
 
 ### Added

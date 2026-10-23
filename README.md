@@ -1,7 +1,7 @@
 # Church Website Audit by Journey Digital
 
-[![Church Website Audit MCP server](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/score.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
-[![Church Website Audit MCP server](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/card.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
+[![Church Website Audit score on Glama](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/score.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
+[![Church Website Audit listing card on Glama](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/card.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
 
 A free church website audit tool (an MCP server and Cursor plugin) that checks mobile, page speed, SEO basics, and whether a first-time visitor can find service times.
 
@@ -63,7 +63,7 @@ Set `JOURNEY_DIGITAL_AUDIT_BASE_URL` to use another origin (default `https://jou
 
 ### Docker
 
-The image speaks MCP over stdio. It is `node:lts-alpine`, installs nothing, and runs as the `node` user:
+The image speaks MCP over stdio. It is `node:22-alpine`, installs nothing, and runs as the `node` user:
 
 ```bash
 docker build -t jd-church-website-audit .
@@ -80,8 +80,8 @@ The church website address you submit is sent to journeydigital.ai, which fetche
 
 | Path | Purpose |
 | --- | --- |
-| `server/audit-mcp.js` | Zero-dependency Node stdio MCP server with one tool. |
-| `Dockerfile`, `.dockerignore` | Stdio image: `node:lts-alpine`, no npm install, runs as `node`. |
+| `server/audit-mcp.js` | Stdio entry. The other files in `server/` are the tool schema, report check, and HTTP client. |
+| `Dockerfile`, `.dockerignore` | Stdio image: `node:22-alpine`, no npm install, runs as `node`. |
 | `glama.json` | Glama maintainer claim. The published schema has one field, `maintainers`. |
 | `mcp.json`, `.cursor-plugin/plugin.json` | Cursor plugin manifest and MCP entry. |
 | `skills/present-church-website-audit/SKILL.md` | How an agent should present the report. |
