@@ -1,5 +1,8 @@
 # Church Website Audit by Journey Digital
 
+[![Church Website Audit score on Glama](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/score.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
+[![Church Website Audit listing card on Glama](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit/badges/card.svg)](https://glama.ai/mcp/servers/tnvolman/jd-church-website-audit)
+
 A free church website audit tool (an MCP server and Cursor plugin) that checks mobile, page speed, SEO basics, and whether a first-time visitor can find service times.
 
 ![Real audit output for https://www.redeemer.com/: 11/21 checks passed](docs/example-audit.png)
@@ -58,6 +61,17 @@ Tool arguments:
 
 Set `JOURNEY_DIGITAL_AUDIT_BASE_URL` to use another origin (default `https://journeydigital.ai`). There is no API key. If the audit service is unreachable or returns a malformed report, the tool returns an error; it never invents results.
 
+### Docker
+
+The image speaks MCP over stdio. It is `node:22-alpine`, installs nothing, and runs as the `node` user:
+
+```bash
+docker build -t jd-church-website-audit .
+docker run -i --rm jd-church-website-audit
+```
+
+Point the MCP client at that command. `JOURNEY_DIGITAL_AUDIT_BASE_URL` still overrides the origin.
+
 ## Privacy
 
 The church website address you submit is sent to journeydigital.ai, which fetches that page, and to Google PageSpeed for the speed check. Plugin audits store anonymous counts only. See the [privacy policy](https://journeydigital.ai/privacy), [terms](https://journeydigital.ai/terms) and [PRIVACY.md](PRIVACY.md).
@@ -67,6 +81,8 @@ The church website address you submit is sent to journeydigital.ai, which fetche
 | Path | Purpose |
 | --- | --- |
 | `server/audit-mcp.js` | Zero-dependency Node stdio MCP server with one tool. |
+| `Dockerfile`, `.dockerignore` | Stdio image: `node:22-alpine`, no npm install, runs as `node`. |
+| `glama.json` | Glama maintainer claim. The published schema has one field, `maintainers`. |
 | `mcp.json`, `.cursor-plugin/plugin.json` | Cursor plugin manifest and MCP entry. |
 | `skills/present-church-website-audit/SKILL.md` | How an agent should present the report. |
 | `SPEC.md` | JSON contract for `POST /api/audit`. |

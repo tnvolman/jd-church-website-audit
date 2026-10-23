@@ -62,24 +62,23 @@ const TOOL = {
   name: "audit_church_website",
   title: "Audit a church website",
   description:
-    "Run Journey Digital's free church website audit for one address. " +
-    "Sends that address to journeydigital.ai and, for the speed check, to Google PageSpeed. " +
-    "Plugin audits store anonymous counts only. " +
-    "Returns the service's report unchanged, or an error. " +
-    "Never invents a check, verdict, finding, or source. " +
-    "Results are free and complete. Privacy: https://journeydigital.ai/privacy " +
-    "Terms: https://journeydigital.ai/terms",
+    "Audits one church homepage for mobile fit, speed, SEO basics, and first-time-guest findability, and returns Journey Digital's report unchanged. " +
+    "Use it when the user gives one church website address. Do not use it to crawl a site, to promise a search ranking, or when no address was given. " +
+    "Sends that address to journeydigital.ai, which fetches the page, and the speed check to Google PageSpeed. No API key. " +
+    "Plugin audits store an anonymous count, so repeating the call records another count, and the church website itself is not modified. " +
+    "If the service is unreachable, rate-limited, or the report is malformed, the result is an error and includes no checks. " +
+    "Privacy: https://journeydigital.ai/privacy Terms: https://journeydigital.ai/terms",
   inputSchema: {
     type: "object",
     properties: {
       url: {
         type: "string",
         minLength: 1,
-        description: "Church website address, with or without https://.",
+        description: "One church homepage, with or without https://. Not a list of pages.",
       },
       include_cta: {
         type: "boolean",
-        description: "When false, the service omits cta. Omit this to keep the service default, which includes cta.",
+        description: "false omits the consultation note (cta). Omit this argument to keep the service default, which includes cta.",
       },
     },
     required: ["url"],
@@ -91,6 +90,93 @@ const TOOL = {
     destructiveHint: false,
     idempotentHint: false,
     openWorldHint: true,
+  },
+  outputSchema: {
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "url",
+      "final_url",
+      "passed",
+      "total",
+      "couldnt",
+      "js_heavy",
+      "speed_source",
+      "truncated",
+      "groups",
+      "checks",
+      "citations",
+      "disclaimer",
+    ],
+    properties: {
+      url: { type: "string", description: "Address the service checked." },
+      final_url: { type: "string", description: "Address after redirects." },
+      passed: { type: "integer", minimum: 0, description: "Scored checks the service marked pass." },
+      total: { type: "integer", minimum: 0, description: "Scored checks in the service's denominator." },
+      couldnt: { type: "integer", minimum: 0, description: "Scored checks the service could not measure." },
+      js_heavy: { type: "boolean", description: "True when the homepage looks JavaScript-heavy." },
+      speed_source: {
+        type: "string",
+        enum: ["pagespeed", "fallback"],
+        description: "pagespeed when Google PageSpeed returned a score, otherwise fallback.",
+      },
+      truncated: { type: "boolean", description: "True when the homepage fetch hit the service's byte cap." },
+      groups: {
+        type: "array",
+        minItems: 1,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "soft", "ids"],
+          properties: {
+            name: { type: "string" },
+            soft: { type: "boolean", description: "True only for heads-up notes, which are not fails." },
+            ids: { type: "array", minItems: 1, items: { type: "string" } },
+          },
+        },
+      },
+      checks: {
+        type: "array",
+        minItems: 1,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["id", "group", "verdict", "finding", "source"],
+          properties: {
+            id: { type: "string" },
+            group: { type: "string" },
+            verdict: { type: "string", enum: ["pass", "warn", "fail", "info"] },
+            finding: { type: "string", description: "Plain-English result from the service." },
+            source: { type: "string", description: "Where that measurement came from." },
+            label: { type: "string", description: "Short check name, when the service sent one." },
+          },
+        },
+      },
+      citations: {
+        type: "object",
+        additionalProperties: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "url"],
+          properties: {
+            name: { type: "string" },
+            url: { type: "string" },
+          },
+        },
+      },
+      disclaimer: { type: "string", description: "Disclaimer text from the service." },
+      cta: {
+        type: "object",
+        additionalProperties: false,
+        required: ["text", "url", "email"],
+        description: "Consultation note. Absent when include_cta is false.",
+        properties: {
+          text: { type: "string" },
+          url: { type: "string" },
+          email: { type: "string" },
+        },
+      },
+    },
   },
 };
 
