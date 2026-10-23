@@ -6,10 +6,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 - Rewrote the README: one-line pitch, a real example audit image (`docs/example-audit.png`), a one-line install, MCP config, and contributing notes.
+- README install paths for the official MCP Registry, Smithery, and MCPB bundles.
 
 ### Added
 - `docs/example-audit.png` and `docs/example-audit-redeemer.json`, real output from a public church homepage.
 - This changelog.
+- `server.json` for the official MCP Registry (`io.github.tnvolman/jd-church-website-audit`), MCPB package on GitHub Releases.
+- `mcpb/manifest.json` and `scripts/pack-mcpb.sh` to build `jd-church-website-audit.mcpb`.
+- `smithery.yaml` for Smithery stdio distribution.
 
 ## [1.0.0] - 2026-10-16
 

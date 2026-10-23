@@ -8,6 +8,34 @@ A free church website audit tool (an MCP server and Cursor plugin) that checks m
 
 ## Install
 
+### Official MCP Registry
+
+This server is listed as **`io.github.tnvolman/jd-church-website-audit`**. After it is published to the [official MCP Registry](https://modelcontextprotocol.io/registry), install it from any registry-aware MCP client (for example, pick the registry entry and let the client download the MCPB package).
+
+Maintainers publish with `mcp-publisher` using the repo-root [`server.json`](server.json) (MCPB download URL and SHA-256 on the [v1.0.0 release](https://github.com/tnvolman/jd-church-website-audit/releases/tag/v1.0.0)).
+
+### Smithery
+
+For [Smithery](https://smithery.ai/), use the pre-built **MCPB** bundle from the [latest GitHub release](https://github.com/tnvolman/jd-church-website-audit/releases) (`jd-church-website-audit.mcpb`). The repo includes [`smithery.yaml`](smithery.yaml) for stdio launch configuration. Publishing to Smithery is done by the maintainer with:
+
+```bash
+smithery mcp publish ./jd-church-website-audit.mcpb -n tnvolman/jd-church-website-audit
+```
+
+### MCPB bundle (Claude Desktop and other MCPB hosts)
+
+Download **`jd-church-website-audit.mcpb`** from [GitHub Releases](https://github.com/tnvolman/jd-church-website-audit/releases) and open it in a host that supports [MCP Bundles](https://github.com/modelcontextprotocol/mcpb) (for example Claude for macOS/Windows). No API key is required.
+
+To rebuild the bundle from source (Node 18+):
+
+```bash
+./scripts/pack-mcpb.sh
+```
+
+That runs `mcpb validate` on the manifest and writes `dist/jd-church-website-audit.mcpb`.
+
+### Git clone (developers and Cursor plugin)
+
 One line, from a clean checkout (Node 18+, zero dependencies). It clones the repo and runs the local self-test:
 
 ```bash
@@ -67,6 +95,9 @@ The church website address you submit is sent to journeydigital.ai, which fetche
 | Path | Purpose |
 | --- | --- |
 | `server/audit-mcp.js` | Zero-dependency Node stdio MCP server with one tool. |
+| `mcpb/manifest.json`, `scripts/pack-mcpb.sh` | MCPB bundle manifest and pack script. |
+| `server.json` | Official MCP Registry metadata (MCPB package URL and SHA-256). |
+| `smithery.yaml` | Smithery stdio server configuration. |
 | `mcp.json`, `.cursor-plugin/plugin.json` | Cursor plugin manifest and MCP entry. |
 | `skills/present-church-website-audit/SKILL.md` | How an agent should present the report. |
 | `SPEC.md` | JSON contract for `POST /api/audit`. |

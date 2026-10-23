@@ -1,0 +1,20 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    additionalProperties: false
+    properties:
+      journeyDigitalAuditBaseUrl:
+        type: string
+        description: Optional Journey Digital audit API origin (default https://journeydigital.ai).
+  exampleConfig: {}
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['server/audit-mcp.js'],
+      env: config.journeyDigitalAuditBaseUrl
+        ? { JOURNEY_DIGITAL_AUDIT_BASE_URL: config.journeyDigitalAuditBaseUrl }
+        : {}
+    })
