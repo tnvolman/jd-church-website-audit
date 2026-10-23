@@ -12,7 +12,7 @@
   },
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/tnvolman/jd-church-website-audit/main/assets/icon.png",
+      "src": "https://raw.githubusercontent.com/tnvolman/jd-church-website-audit/v1.0.0/assets/icon.png",
       "mimeType": "image/png",
       "sizes": ["1024x1024"]
     }
