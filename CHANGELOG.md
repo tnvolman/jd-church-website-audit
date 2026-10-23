@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- `Dockerfile` and `.dockerignore`: stdio image on `node:lts-alpine`, no npm install, non-root `node` user.
+- Glama score and card badges in the README.
+- `outputSchema` on `audit_church_website`, plus when-to-call notes in the tool description. The four MCP annotation hints were already set and are unchanged.
 - Registry prep only: `server.json` for `io.github.tnvolman/jd-church-website-audit`, the MCPB manifest and `scripts/build-mcpb.js`, and `glama.json`. Nothing was published.
 
 ### Changed

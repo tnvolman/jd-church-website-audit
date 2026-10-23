@@ -1,0 +1,9 @@
+.git
+.github
+docs
+scripts
+skills
+assets
+mcpb
+**/*.png
+**/*.md
