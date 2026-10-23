@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- GitHub Actions CI (`.github/workflows/ci.yml`) runs `node scripts/prove.js` on Node 22 for push and pull_request.
 - `Dockerfile` and `.dockerignore`: stdio image on digest-pinned `node:22-alpine`, no npm install, non-root `node` user. `.dockerignore` skips `.env` and `node_modules`.
 - Glama score and card badges in the README.
 - `outputSchema` on `audit_church_website`, plus when-to-call notes in the tool description. The four MCP annotation hints were already set and are unchanged.
