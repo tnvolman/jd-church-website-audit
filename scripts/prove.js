@@ -435,6 +435,11 @@ async function main() {
         });
         return;
       }
+      if (target.endsWith("/busy")) {
+        res.writeHead(429, { "Content-Type": "application/json", "Retry-After": "60" });
+        res.end(JSON.stringify({ error: "rate_limited", message: "Busy right now. Try again in a minute." }));
+        return;
+      }
       if (target.endsWith("/edge502")) {
         res.writeHead(502, { "Content-Type": "text/plain" });
         res.end("error code: 502");
@@ -652,6 +657,15 @@ async function main() {
     "gateway returned HTTP 502",
     "try again in a minute",
   ]);
+  await expectClosed("429 busy uses Retry-After", "https://grace.example/busy", [
+    "rate_limited: Busy right now.",
+    "try again in about 60 seconds",
+  ]);
+  await expectClosed("local reject localhost trailing dot", "http://localhost./", ["private network"]);
+  await expectClosed("local reject ::ffff: mapped", "http://[::ffff:127.0.0.1]/", ["private network"]);
+  await expectClosed("local reject ::", "http://[::]/", ["private network"]);
+  await expectClosed("local reject fe80::/10 (febf)", "http://[febf::1]/", ["private network"]);
+  await expectClosed("local reject 100.64.0.0/10", "http://100.100.1.1/", ["private network"]);
   await expectClosed("local reject ftp scheme", "ftp://grace.example/", ["bad_url", "Only http and https"]);
   await expectClosed("local reject localhost", "http://localhost/", ["private network"]);
   await expectClosed("local reject private IP", "http://192.168.1.10/", ["private network"]);

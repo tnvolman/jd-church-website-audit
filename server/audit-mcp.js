@@ -367,6 +367,7 @@ function postJson(target, payload) {
       res.on("end", () => {
         resolve({
           status: res.statusCode || 0,
+          retryAfter: res.headers["retry-after"],
           body: Buffer.concat(chunks).toString("utf8"),
         });
       });
@@ -404,16 +405,19 @@ function checkInputUrl(raw) {
     return "Only http and https website addresses can be checked.";
   }
   if (parsed.username || parsed.password) return "Website addresses with logins cannot be checked.";
-  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.+$/, "");
   if (
     host === "localhost" ||
     host.endsWith(".localhost") ||
     host.endsWith(".local") ||
     host.endsWith(".internal") ||
     /^(127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host) ||
+    /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host) ||
     host === "::1" ||
+    host === "::" ||
+    host.startsWith("::ffff:") ||
     /^f[cd][0-9a-f]{2}:/.test(host) ||
-    /^fe80:/.test(host)
+    /^fe[89ab][0-9a-f]:/.test(host)
   ) {
     return "That address points to a private network.";
   }
@@ -421,7 +425,19 @@ function checkInputUrl(raw) {
   return "";
 }
 
-function httpError(status, text) {
+function retryAfterText(value) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw == null) return "in a minute";
+  const secs = /^\d+$/.test(String(raw).trim())
+    ? Number(String(raw).trim())
+    : Math.ceil((Date.parse(String(raw)) - Date.now()) / 1000);
+  if (!Number.isFinite(secs) || secs <= 0) return "in a minute";
+  if (secs < 90) return `in about ${secs} second${secs === 1 ? "" : "s"}`;
+  if (secs < 7200) return `in about ${Math.round(secs / 60)} minutes`;
+  return `in about ${Math.round(secs / 3600)} hours`;
+}
+
+function httpError(status, text, retryAfter) {
   let parsed = null;
   try {
     parsed = JSON.parse(text);
@@ -445,6 +461,10 @@ function httpError(status, text) {
     ) {
       limits = ` Limit: ${parsed.error.limits.per_hour} per hour and ${parsed.error.limits.per_day} per day.`;
     }
+  }
+  if (status === 429) {
+    const why = message || "The audit service is busy or this address hit its limit.";
+    return toolError(`${code ? `${code}: ` : ""}${why}${limits} Please try again ${retryAfterText(retryAfter)}. No check results are shown.`);
   }
   if (!message) {
     if (GATEWAY_STATUSES.has(status)) {
@@ -505,7 +525,7 @@ async function auditTool(params) {
     return toolError(`The audit service could not be reached, so no check results are shown. (${detail})`);
   }
 
-  if (response.status !== 200) return httpError(response.status, response.body);
+  if (response.status !== 200) return httpError(response.status, response.body, response.retryAfter);
 
   let parsed;
   try {
