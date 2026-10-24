@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+- A bare `HTTP 502` from the service edge now gives a plain explanation instead of "without a usable error message".
+- Obvious bad addresses (non-http schemes, logins, spaces, localhost, private IPs) are rejected locally with a clear message.
+- Timeout and dropped-connection errors now say what happened.
+- `fetch_failed` is documented as `422` (service change in tnvolman/the-forge).
+
 ### Added
 - GitHub Actions CI (`.github/workflows/ci.yml`) runs `node scripts/prove.js` on Node 22 for push and pull_request.
 - `Dockerfile` and `.dockerignore`: stdio image on digest-pinned `node:22-alpine`, no npm install, non-root `node` user. `.dockerignore` skips `.env` and `node_modules`.

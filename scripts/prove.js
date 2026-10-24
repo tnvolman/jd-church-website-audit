@@ -435,8 +435,13 @@ async function main() {
         });
         return;
       }
+      if (target.endsWith("/edge502")) {
+        res.writeHead(502, { "Content-Type": "text/plain" });
+        res.end("error code: 502");
+        return;
+      }
       if (target.endsWith("/down")) {
-        send(502, {
+        send(422, {
           error: "fetch_failed",
           message: "We could not reach that website (ConnectionError).",
         });
@@ -643,7 +648,16 @@ async function main() {
     "rate_limited",
     "Too many audits from this address. Please try again later.",
   ]);
-  await expectClosed("fail-closed 502 fetch failure", "https://grace.example/down", [
+  await expectClosed("fail-closed edge 502 with bare body", "https://grace.example/edge502", [
+    "gateway returned HTTP 502",
+    "try again in a minute",
+  ]);
+  await expectClosed("local reject ftp scheme", "ftp://grace.example/", ["bad_url", "Only http and https"]);
+  await expectClosed("local reject localhost", "http://localhost/", ["private network"]);
+  await expectClosed("local reject private IP", "http://192.168.1.10/", ["private network"]);
+  await expectClosed("local reject login in URL", "https://a:b@grace.example/", ["logins"]);
+  await expectClosed("local reject spaces", "grace church.org", ["no spaces"]);
+  await expectClosed("fail-closed 422 fetch failure", "https://grace.example/down", [
     "fetch_failed",
     "We could not reach that website (ConnectionError).",
   ]);

@@ -212,13 +212,14 @@ Same limiter as the HTML form: `RATE_LIMITS` is 5 per hour and 20 per day, per I
 
 A rejected request stores nothing.
 
-### 502 fetch failure
+### 422 fetch failure
 
-`FetchError` from the existing fetch path. The HTML form currently returns these as `400`. This JSON route returns `502` so a bad address and a site that could not be fetched stay distinct.
+`FetchError` from the existing fetch path. The HTML form currently returns these as `400`. This JSON route returns `422` so a bad address and a site that could not be fetched stay distinct. It is not `502`: Railway and Cloudflare edges replace origin 5xx bodies with a bare `error code: 502`, which hid this message. The plugin still treats a bare 502/503/504 or 520-524 as a gateway problem and says so plainly.
 
 `error` is `fetch_failed`. `message` is the existing sentence:
 
 - `We could not reach that website ({ExceptionName}).`
+- `That website took too long to answer, so it could not be checked. Try again in a minute.`
 - `The website sent a redirect with no destination.`
 - `The website redirected too many times.`
 - `The website answered with an error (HTTP {status}).`

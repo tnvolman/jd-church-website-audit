@@ -362,6 +362,8 @@ function postJson(target, payload) {
         }
         chunks.push(chunk);
       });
+      res.on("error", reject);
+      res.on("aborted", () => reject(new Error("The audit service closed the connection early.")));
       res.on("end", () => {
         resolve({
           status: res.statusCode || 0,
@@ -370,12 +372,53 @@ function postJson(target, payload) {
       });
     });
     req.setTimeout(REQUEST_TIMEOUT_MS, () => {
-      req.destroy(new Error("The audit service did not respond in time."));
+      req.destroy(
+        new Error(
+          `The audit service did not respond within ${Math.round(REQUEST_TIMEOUT_MS / 1000)} seconds. The church website may be very slow; try again in a minute.`
+        )
+      );
     });
     req.on("error", reject);
     req.write(body);
     req.end();
   });
+}
+
+const GATEWAY_STATUSES = new Set([502, 503, 504, 520, 521, 522, 523, 524]);
+const MAX_INPUT_URL_LENGTH = 2048;
+
+// Cheap local checks so obvious mistakes never leave the machine. The service
+// still runs its own SSRF guard; this only gives a faster, clearer answer.
+function checkInputUrl(raw) {
+  const text = raw.trim();
+  if (text.length > MAX_INPUT_URL_LENGTH) return "That address is too long.";
+  if (/\s/.test(text)) return "Send one website address with no spaces.";
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
+  let parsed;
+  try {
+    parsed = new URL(withScheme);
+  } catch (_err) {
+    return "That does not look like a website address.";
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return "Only http and https website addresses can be checked.";
+  }
+  if (parsed.username || parsed.password) return "Website addresses with logins cannot be checked.";
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    /^(127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host) ||
+    host === "::1" ||
+    /^f[cd][0-9a-f]{2}:/.test(host) ||
+    /^fe80:/.test(host)
+  ) {
+    return "That address points to a private network.";
+  }
+  if (!host.includes(".") && !host.includes(":")) return "That does not look like a website address.";
+  return "";
 }
 
 function httpError(status, text) {
@@ -404,6 +447,13 @@ function httpError(status, text) {
     }
   }
   if (!message) {
+    if (GATEWAY_STATUSES.has(status)) {
+      return toolError(
+        `The audit service's gateway returned HTTP ${status}. This usually means the church website was too slow ` +
+          "or could not be reached from the checker, or the service is restarting. Check that the address opens in a " +
+          "browser and try again in a minute. No check results are shown."
+      );
+    }
     return toolError(
       `The audit service returned HTTP ${status} without a usable error message, so no check results are shown.`
     );
@@ -433,6 +483,9 @@ async function auditTool(params) {
   if (Object.prototype.hasOwnProperty.call(args, "include_cta") && typeof args.include_cta !== "boolean") {
     return toolError("include_cta must be true or false. No check results are shown.");
   }
+
+  const inputProblem = checkInputUrl(args.url);
+  if (inputProblem) return toolError(`bad_url: ${inputProblem} No check results are shown.`);
 
   let endpoint;
   try {
