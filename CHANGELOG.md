@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-24
+
 ### Fixed
 - A bare `HTTP 502` from the service edge now gives a plain explanation instead of "without a usable error message".
 - Obvious bad addresses (non-http schemes, logins, spaces, localhost, private IPs) are rejected locally with a clear message.
@@ -38,5 +40,6 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Fixed
 - Kept the mock audit report internally consistent.
 
-[Unreleased]: https://github.com/tnvolman/jd-church-website-audit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/tnvolman/jd-church-website-audit/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/tnvolman/jd-church-website-audit/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tnvolman/jd-church-website-audit/releases/tag/v1.0.0

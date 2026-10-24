@@ -26,7 +26,7 @@ const https = require("https");
 const { URL } = require("url");
 
 const SERVER_NAME = "church-website-audit";
-const SERVER_VERSION = "1.0.0";
+const SERVER_VERSION = "1.0.1";
 const DEFAULT_BASE = "https://journeydigital.ai";
 const DEFAULT_PROTOCOL = "2024-11-05";
 const PROTOCOL_VERSIONS = new Set(["2024-11-05", "2025-03-26", "2025-06-18"]);

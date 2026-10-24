@@ -3,7 +3,7 @@
   "name": "io.github.tnvolman/jd-church-website-audit",
   "title": "Church Website Audit by Journey Digital",
   "description": "Free church website audit for mobile, speed, SEO, and first-time guests.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "websiteUrl": "https://journeydigital.ai/audit",
   "repository": {
     "url": "https://github.com/tnvolman/jd-church-website-audit",
@@ -12,7 +12,7 @@
   },
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/tnvolman/jd-church-website-audit/v1.0.0/assets/icon.png",
+      "src": "https://raw.githubusercontent.com/tnvolman/jd-church-website-audit/v1.0.1/assets/icon.png",
       "mimeType": "image/png",
       "sizes": ["1024x1024"]
     }
@@ -20,9 +20,9 @@
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/tnvolman/jd-church-website-audit/releases/download/v1.0.0/jd-church-website-audit.mcpb",
-      "version": "1.0.0",
-      "fileSha256": "38a7ef4f62217608106187c33115ef02e42ec9b9acccce75ed964bfefd8146b1",
+      "identifier": "https://github.com/tnvolman/jd-church-website-audit/releases/download/v1.0.1/jd-church-website-audit.mcpb",
+      "version": "1.0.1",
+      "fileSha256": "2683595ad3565f497a7501fe4ef1de56064f2d010b81c4195e679d5d8a4791ee",
       "transport": {
         "type": "stdio"
       }
