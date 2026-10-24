@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "church-website-audit",
   "display_name": "Church Website Audit by Journey Digital",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Free church website audit: mobile, PageSpeed, SEO basics, and first-time-guest findability.",
   "long_description": "One MCP tool, audit_church_website, checks a church homepage via Journey Digital: mobile basics, Google PageSpeed, SEO basics, service times, address, plan-a-visit path, contact, and giving. Returns passed/total with a plain-English finding and source per check. No API key. The URL is sent to journeydigital.ai and Google PageSpeed.",
   "author": {

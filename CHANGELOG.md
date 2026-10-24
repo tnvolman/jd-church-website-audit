@@ -4,11 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-24
+
 ### Fixed
 - A bare `HTTP 502` from the service edge now gives a plain explanation instead of "without a usable error message".
 - Obvious bad addresses (non-http schemes, logins, spaces, localhost, private IPs) are rejected locally with a clear message.
 - Timeout and dropped-connection errors now say what happened.
 - `fetch_failed` is documented as `422` (service change in tnvolman/the-forge).
+- A `429` from the service now gives a plain busy message that uses `Retry-After` when present. The plugin never retries on its own.
+- More addresses are rejected locally: `localhost.` (trailing dot), IPv4-mapped IPv6 (`::ffff:`), `::`, link-local `fe80::/10`, and shared `100.64.0.0/10`.
 
 ### Added
 - GitHub Actions CI (`.github/workflows/ci.yml`) runs `node scripts/prove.js` on Node 22 for push and pull_request.
@@ -16,13 +20,11 @@ All notable changes to this project are documented here. The format follows [Kee
 - Glama score and card badges in the README.
 - `outputSchema` on `audit_church_website`, plus when-to-call notes in the tool description. The four MCP annotation hints were already set and are unchanged.
 - Registry prep only: `server.json` for `io.github.tnvolman/jd-church-website-audit`, the MCPB manifest and `scripts/build-mcpb.js`, and `glama.json`. Nothing was published.
+- `docs/example-audit.png` and `docs/example-audit-redeemer.json`, real output from a public church homepage.
+- This changelog.
 
 ### Changed
 - Rewrote the README: one-line pitch, a real example audit image (`docs/example-audit.png`), a one-line install, MCP config, and contributing notes.
-
-### Added
-- `docs/example-audit.png` and `docs/example-audit-redeemer.json`, real output from a public church homepage.
-- This changelog.
 
 ## [1.0.0] - 2026-10-16
 
@@ -38,5 +40,6 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Fixed
 - Kept the mock audit report internally consistent.
 
-[Unreleased]: https://github.com/tnvolman/jd-church-website-audit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/tnvolman/jd-church-website-audit/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/tnvolman/jd-church-website-audit/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tnvolman/jd-church-website-audit/releases/tag/v1.0.0

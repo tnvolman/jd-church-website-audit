@@ -2,11 +2,11 @@
 "use strict";
 
 /**
- * Pack a local MCPB and confirm it still matches the published v1.0.0 asset.
+ * Pack a local MCPB and confirm it still matches the published v1.0.1 asset.
  *
  * Writes dist/jd-church-website-audit.mcpb. Does not publish, and does not
  * create or edit a GitHub release. server.json fileSha256 is the SHA-256 of
- * the asset already attached to the v1.0.0 release. A local rebuild uses a
+ * the asset already attached to the v1.0.1 release. A local rebuild uses a
  * fixed timestamp, so its hash will differ from that asset even when the
  * three packed files are identical.
  */
@@ -19,14 +19,14 @@ const root = path.resolve(__dirname, "..");
 const outPath = path.join(root, "dist", "jd-church-website-audit.mcpb");
 
 const RELEASE_URL =
-  "https://github.com/tnvolman/jd-church-website-audit/releases/download/v1.0.0/jd-church-website-audit.mcpb";
-const RELEASE_SHA256 = "38a7ef4f62217608106187c33115ef02e42ec9b9acccce75ed964bfefd8146b1";
+  "https://github.com/tnvolman/jd-church-website-audit/releases/download/v1.0.1/jd-church-website-audit.mcpb";
+const RELEASE_SHA256 = "2683595ad3565f497a7501fe4ef1de56064f2d010b81c4195e679d5d8a4791ee";
 
 const MEMBERS = [
   {
     name: "manifest.json",
     source: "mcpb/manifest.json",
-    sha256: "215d469765aa43bfe1f02f2d7d9768d29c8f47b6d9a1750aa55ac6412397d82c",
+    sha256: "480546a992dbbade3718c265b752dd541fd5c4a3c53df5e1e4e7c0828d4bea32",
     mode: 0o644,
   },
   {
@@ -38,7 +38,7 @@ const MEMBERS = [
   {
     name: "server/audit-mcp.js",
     source: "server/audit-mcp.js",
-    sha256: "0b8b181c4ebfb4f0725270b20d733277e6c8da618f5a47e6aed42ca595bc9836",
+    sha256: "214a5d0fd9e3b83908794f85f71472913f7e1af44562837d25d44001abb0bdb2",
     mode: 0o755,
   },
 ];
@@ -123,8 +123,8 @@ function main() {
   const serverJson = JSON.parse(fs.readFileSync(path.join(root, "server.json"), "utf8"));
   const pkg = serverJson.packages && serverJson.packages[0];
   if (!pkg || pkg.registryType !== "mcpb") fail("server.json package is not mcpb");
-  if (pkg.identifier !== RELEASE_URL) fail("server.json identifier is not the v1.0.0 release asset");
-  if (pkg.fileSha256 !== RELEASE_SHA256) fail("server.json fileSha256 is not the v1.0.0 release asset");
+  if (pkg.identifier !== RELEASE_URL) fail("server.json identifier is not the v1.0.1 release asset");
+  if (pkg.fileSha256 !== RELEASE_SHA256) fail("server.json fileSha256 is not the v1.0.1 release asset");
   if (serverJson.name !== "io.github.tnvolman/jd-church-website-audit") {
     fail("server.json name is not io.github.tnvolman/jd-church-website-audit");
   }
@@ -135,7 +135,7 @@ function main() {
     const hash = sha256(data);
     if (hash !== member.sha256) {
       fail(
-        `${member.source} changed (${hash}). The v1.0.0 asset ${RELEASE_SHA256} no longer matches. ` +
+        `${member.source} changed (${hash}). The v1.0.1 asset ${RELEASE_SHA256} no longer matches. ` +
           "Rebuild, replace that release asset, and update server.json fileSha256 before publishing."
       );
     }
