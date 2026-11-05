@@ -78,7 +78,7 @@ function checkManifest() {
   assert(nameOk, `plugin name ${manifest.name} is not kebab-case`);
   assert(manifest.displayName === "Church Website Audit by Journey Digital", "displayName");
   assert(manifest.license === "MIT", "license");
-  assert(manifest.author && manifest.author.name === "Michael McClanahan", "author name");
+  assert(manifest.author && manifest.author.name === "Michael McClanahan (@tnvolman)", "author name");
   assert(manifest.author.email === "sales@journeydigital.ai", "author email");
   assert(manifest.publisher === "Michael McClanahan", "publisher");
   assert(manifest.homepage === "https://journeydigital.ai/audit", "homepage");

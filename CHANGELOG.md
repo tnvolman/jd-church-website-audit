@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+- Cursor plugin `author.name` is Michael McClanahan (@tnvolman). The MIT copyright line stays Copyright (c) 2026 Michael McClanahan. Contact stays sales@journeydigital.ai.
+
 ## [1.0.1] - 2026-10-24
 
 ### Fixed
